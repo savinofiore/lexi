@@ -11,6 +11,13 @@ spec, and they stay in the repository when the task is done.
 Read `.lexi.json` at the project root first: it names the `gate` command, the
 `testable` paths and the mirror rule. No `.lexi.json` → run `/lexi:init` first.
 
+This skill owns the protocol and delegates the rest. Three plugins are required
+and are called by name below: **ponytail** (ambient — the ladder that keeps the
+implementation minimal), **mattpocock-skills:tdd** (what a good test is),
+**mattpocock-skills:grilling** (settling an open scope). If a call reports the
+skill is missing, say which plugin is not installed and point at the README
+rather than improvising a replacement for it.
+
 ## 1. Understand
 
 Read the code the task actually touches — the file, and the callers of anything
@@ -23,7 +30,8 @@ one log line that separates them, and ask the user to reproduce. A test written
 against a guessed cause goes green while the bug is still there.
 
 **Scope genuinely open** (several designs are defensible, product intent
-unclear)? Call the Skill tool with "grilling" and settle it in rounds. Skip it
+unclear)? Call the Skill tool with "mattpocock-skills:grilling" and settle it
+in rounds. Skip it
 when the task is clear — the interview is the expensive part of the old
 process, so here it is opt-in, not a toll on every change.
 
@@ -48,8 +56,10 @@ Per slice, in order:
 1. **RED** — write ONE test. Run the gate. It must fail *for the reason under
    test*, not for a setup or compile error.
 2. **GREEN** — change production code only, the least that makes it pass. The
-   ponytail ladder applies here: reuse what the repo already has, stdlib before
-   custom, one line before fifty.
+   ponytail ladder governs this step: does it need to exist, is it already in
+   the codebase, does the stdlib or the platform do it, can it be one line.
+   Ponytail is ambient once installed — no call needed, but the ladder is not
+   optional here.
 3. **Gate** — rerun. Green → next slice.
 
 Never write all the tests up front. Bulk tests verify *imagined* behaviour: they
@@ -57,8 +67,9 @@ commit to a test shape before the implementation has taught you anything, and
 they go insensitive to real changes. Each slice is a tracer bullet that answers
 to what the last one revealed.
 
-If the `tdd` skill is installed, call the Skill tool with "tdd" for what makes a
-test worth keeping (seams, mocking, anti-patterns).
+Call the Skill tool with "mattpocock-skills:tdd" for what makes a test worth
+keeping — seams, mocking, the anti-patterns. Consult it before and during the
+loop, not after: this skill does not restate any of it.
 
 ## 4. Stop conditions
 

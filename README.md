@@ -27,15 +27,46 @@ Everything outside `testable` — UI layers, design tokens, generated code,
 platform bindings — is free to edit with no test. The whitelist is deliberately
 narrow, so the guard bites on logic and never taxes a one-line style fix.
 
+## Requires
+
+lexi is deliberately small because it delegates. It owns the protocol — the
+gate, the testable perimeter, the red-green loop and its stop conditions — and
+nothing else. How to write code, what makes a test worth keeping and how to
+interrogate an open scope are all answered by plugins that already do it well,
+so lexi calls them instead of restating them.
+
+**All three are required.** Without them lexi still runs, but each missing
+plugin removes a step it hands off rather than a step it performs itself:
+
+| plugin | what lexi hands to it | when |
+|---|---|---|
+| [ponytail](https://github.com/DietrichGebert/ponytail) | the ladder that keeps the implementation minimal — reuse before writing, stdlib before custom, one line before fifty | every GREEN step |
+| [`tdd`](https://github.com/mattpocock/skills) (mattpocock-skills) | what a good test is: seams, mocking, the anti-patterns, why vertical slices beat bulk tests | before and during the loop |
+| [`grilling`](https://github.com/mattpocock/skills) (same plugin) | rounds of questions that settle a genuinely open scope | step 1, opt-in |
+
+Restating their content inside lexi would mean paying for the same context
+twice and maintaining a stale copy of someone else's work. That duplication is
+the exact failure this plugin was built to remove.
+
 ## Install
 
+Dependencies first, lexi last:
+
 ```
+/plugin marketplace add DietrichGebert/ponytail
+/plugin install ponytail@ponytail
+
+/plugin install mattpocock-skills@claude-plugins-official
+
 /plugin marketplace add savinofiore/lexi
 /plugin install lexi@lexi
+
 /lexi:init
 ```
 
-From a local clone, point the marketplace at the directory instead:
+`mattpocock-skills` ships both `tdd` and `grilling`, and lives in the official
+marketplace, which is already registered in a stock Claude Code install. From a
+local clone of lexi, point the marketplace at the directory instead:
 `/plugin marketplace add /path/to/lexi`.
 
 Without `.lexi.json` the guard is dormant and nothing changes — a project opts
@@ -63,17 +94,6 @@ tests work by setting `tests` equal to `source`.
 - `.lexi/allow` — one test path per line, releases a rewrite on those files only.
 - `LEXI_OFF=1` — disables the guard for the session. Outside the process, for
   emergencies.
-
-## Pairs with
-
-- [ponytail](https://github.com/DietrichGebert/ponytail) — the ladder that keeps
-  the implementation step minimal.
-- `tdd` from [mattpocock/skills](https://github.com/mattpocock/skills) — what
-  makes a test worth keeping: seams, mocking, anti-patterns.
-- `grilling` from the same collection — for the tasks whose scope is actually open.
-
-lexi holds only what those cannot know: the project's gate, its testable
-perimeter, and the red-green protocol with its stop conditions.
 
 ## Development
 

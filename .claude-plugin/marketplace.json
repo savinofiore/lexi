@@ -6,14 +6,14 @@
     "url": "https://github.com/savinofiore"
   },
   "metadata": {
-    "description": "Test-first workflow for coding agents. No spec document, no approval file: the tests are the spec.",
+    "description": "Test-first workflow for coding agents. No spec document, no approval file: the tests are the spec. Requires ponytail and mattpocock-skills.",
     "version": "0.1.0"
   },
   "plugins": [
     {
       "name": "lexi",
       "source": "./",
-      "description": "Test-first flow without the spec ceremony. A PreToolUse hook keeps source edits behind a mirror test and protects existing assertions; /lexi:lexi drives one vertical slice at a time, red to green. Run /lexi:init once per project.",
+      "description": "Test-first flow without the spec ceremony. A PreToolUse hook keeps source edits behind a mirror test and protects existing assertions; /lexi:lexi drives one vertical slice at a time, red to green. Requires ponytail and mattpocock-skills (tdd, grilling), which it calls instead of restating. Run /lexi:init once per project.",
       "version": "0.1.0",
       "author": {
         "name": "Savino Fiore"
