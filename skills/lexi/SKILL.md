@@ -11,12 +11,11 @@ spec, and they stay in the repository when the task is done.
 Read `.lexi.json` at the project root first: it names the `gate` command, the
 `testable` paths and the mirror rule. No `.lexi.json` → run `/lexi:init` first.
 
-This skill owns the protocol and delegates the rest. Three plugins are required
-and are called by name below: **ponytail** (ambient — the ladder that keeps the
-implementation minimal), **mattpocock-skills:tdd** (what a good test is),
-**mattpocock-skills:grilling** (settling an open scope). If a call reports the
-skill is missing, say which plugin is not installed and point at the README
-rather than improvising a replacement for it.
+This skill owns the protocol and hands the rest off. Test quality lives in
+`lexi:tdd`, scope interrogation in `lexi:grill`, and how much code to write in
+**ponytail**, the one external plugin lexi requires — it is ambient once
+installed, no call needed. If ponytail is missing, say so instead of improvising
+a replacement for it.
 
 ## 1. Understand
 
@@ -30,8 +29,8 @@ one log line that separates them, and ask the user to reproduce. A test written
 against a guessed cause goes green while the bug is still there.
 
 **Scope genuinely open** (several designs are defensible, product intent
-unclear)? Call the Skill tool with "mattpocock-skills:grilling" and settle it
-in rounds. Skip it
+unclear)? Call the Skill tool with "lexi:grill" and settle it in rounds. Skip
+it
 when the task is clear — the interview is the expensive part of the old
 process, so here it is opt-in, not a toll on every change.
 
@@ -67,8 +66,8 @@ commit to a test shape before the implementation has taught you anything, and
 they go insensitive to real changes. Each slice is a tracer bullet that answers
 to what the last one revealed.
 
-Call the Skill tool with "mattpocock-skills:tdd" for what makes a test worth
-keeping — seams, mocking, the anti-patterns. Consult it before and during the
+Call the Skill tool with "lexi:tdd" for what makes a test worth keeping —
+seams, assertions, mocking, the anti-patterns. Consult it before and during the
 loop, not after: this skill does not restate any of it.
 
 ## 4. Stop conditions

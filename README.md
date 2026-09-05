@@ -29,24 +29,31 @@ narrow, so the guard bites on logic and never taxes a one-line style fix.
 
 ## Requires
 
-lexi is deliberately small because it delegates. It owns the protocol — the
-gate, the testable perimeter, the red-green loop and its stop conditions — and
-nothing else. How to write code, what makes a test worth keeping and how to
-interrogate an open scope are all answered by plugins that already do it well,
-so lexi calls them instead of restating them.
+One external plugin:
 
-**All three are required.** Without them lexi still runs, but each missing
-plugin removes a step it hands off rather than a step it performs itself:
+```
+/plugin marketplace add DietrichGebert/ponytail
+/plugin install ponytail@ponytail
+```
 
-| plugin | what lexi hands to it | when |
-|---|---|---|
-| [ponytail](https://github.com/DietrichGebert/ponytail) | the ladder that keeps the implementation minimal — reuse before writing, stdlib before custom, one line before fifty | every GREEN step |
-| [`tdd`](https://github.com/mattpocock/skills) (mattpocock-skills) | what a good test is: seams, mocking, the anti-patterns, why vertical slices beat bulk tests | before and during the loop |
-| [`grilling`](https://github.com/mattpocock/skills) (same plugin) | rounds of questions that settle a genuinely open scope | step 1, opt-in |
+[ponytail](https://github.com/DietrichGebert/ponytail) governs every GREEN step
+— does this need to exist, is it already in the codebase, does the stdlib or the
+platform do it, can it be one line. It is ambient once installed, and lexi does
+not restate it: writing less code is a whole discipline and someone already
+maintains it.
 
-Restating their content inside lexi would mean paying for the same context
-twice and maintaining a stale copy of someone else's work. That duplication is
-the exact failure this plugin was built to remove.
+The other two halves ship with lexi, as skills rather than dependencies:
+
+| skill | what it holds |
+|---|---|
+| `lexi:tdd` | what makes a test worth keeping — seams, assertions, mocking, the anti-patterns, why coverage is a diagnostic and not a target |
+| `lexi:grill` | rounds of questions that settle a genuinely open scope before anything is written |
+
+Neither is novel ground — seams, the assertion-independence rule and the
+anti-patterns are decades old, and [mattpocock/skills](https://github.com/mattpocock/skills)
+covers the same territory in a larger collection worth reading. They live here
+because lexi needs exactly these two and installing twenty-five skills to reach
+them is a bad trade.
 
 ## Install
 
@@ -56,17 +63,13 @@ Dependencies first, lexi last:
 /plugin marketplace add DietrichGebert/ponytail
 /plugin install ponytail@ponytail
 
-/plugin install mattpocock-skills@claude-plugins-official
-
 /plugin marketplace add savinofiore/lexi
 /plugin install lexi@lexi
 
 /lexi:init
 ```
 
-`mattpocock-skills` ships both `tdd` and `grilling`, and lives in the official
-marketplace, which is already registered in a stock Claude Code install. From a
-local clone of lexi, point the marketplace at the directory instead:
+From a local clone, point the marketplace at the directory instead:
 `/plugin marketplace add /path/to/lexi`.
 
 Without `.lexi.json` the guard is dormant and nothing changes — a project opts
