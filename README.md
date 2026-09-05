@@ -29,7 +29,16 @@ narrow, so the guard bites on logic and never taxes a one-line style fix.
 
 ## Requires
 
-One external plugin:
+**Python 3** on `PATH`, as `python3` — that is the command the hook runs, so
+without it every guarded edit fails instead of being checked. macOS and most
+Linux distributions already have it; on Windows install Python and make sure
+`python3 --version` answers, not just `python`.
+
+```
+python3 --version
+```
+
+**One external plugin**, ponytail:
 
 ```
 /plugin marketplace add DietrichGebert/ponytail
@@ -65,27 +74,55 @@ Dependencies first, lexi last:
 
 /plugin marketplace add savinofiore/lexi
 /plugin install lexi@lexi
-
-/lexi:init
 ```
 
-From a local clone, point the marketplace at the directory instead —
-the path must be absolute:
+Check what landed:
 
 ```
-/plugin marketplace add /absolute/path/to/lexi
+/plugin
 ```
 
-Outside a session the same three steps work from the shell:
+`lexi 0.1.0` should list **4 skills** (`init`, `lexi`, `tdd`, `grill`) and **1
+PreToolUse hook**. The same works from the shell, outside a session:
 
 ```
 claude plugin marketplace add savinofiore/lexi
 claude plugin install lexi@lexi
-claude plugin details lexi@lexi   # 4 skills, 1 PreToolUse hook
+claude plugin details lexi@lexi
 ```
 
-Without `.lexi.json` the guard is dormant and nothing changes — a project opts
-in explicitly.
+Restart the session so the hook and the skills load, then opt a project in:
+
+```
+/lexi:init
+```
+
+Until that project has a `.lexi.json` the guard is dormant and nothing changes —
+installing lexi does not alter how any other repository behaves.
+
+### Installing from a clone instead
+
+Only for working *on* lexi. The marketplace takes its name from the manifest, so
+the clone and the GitHub repository both claim `lexi` and the two cannot coexist:
+adding one while the other is declared fails with *"its network source differs
+from the one declared for it in settings"*. Pick one.
+
+Clone → local, so edits to `hooks/` and `skills/` are live at the next session
+with no push:
+
+```
+/plugin marketplace add /absolute/path/to/lexi     # relative paths are rejected
+/plugin install lexi@lexi
+```
+
+Local → GitHub, back to what everyone else runs:
+
+```
+/plugin uninstall lexi@lexi
+/plugin marketplace remove lexi
+/plugin marketplace add savinofiore/lexi
+/plugin install lexi@lexi
+```
 
 ## Configuration
 
