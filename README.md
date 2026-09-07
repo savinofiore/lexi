@@ -126,6 +126,29 @@ Back to GitHub:
 
 Lexi ships as a **pi package**: `pi/extensions/lexi-guard.ts` (the guard, wrapping the same `hooks/tdd_guard.py`) and `pi/skills/lexi-*` (the six skills), declared in `package.json`'s `pi` field.
 
+**One optional extension: subagent**
+
+Pi core ships no subagents by design. Lexi's `init` skill can offload the gate
+(the test-suite run inside RED/GREEN) to an isolated subagent running a model
+you pick, instead of the driving model spending its own context on test
+output. Skip this if you don't want that — everything runs inline exactly as
+before.
+
+Install the official subagent example extension — it ships inside the `pi`
+package itself, no separate download:
+
+```bash
+PI_PKG="$(npm root -g)/@earendil-works/pi-coding-agent"
+mkdir -p ~/.pi/agent/extensions/subagent
+ln -sf "$PI_PKG/examples/extensions/subagent/index.ts" ~/.pi/agent/extensions/subagent/index.ts
+ln -sf "$PI_PKG/examples/extensions/subagent/agents.ts" ~/.pi/agent/extensions/subagent/agents.ts
+```
+
+If `pi` was installed some other way, `$(npm root -g)` won't resolve — find the
+package's install path and point the symlinks there instead.
+
+Dependencies first, lexi last:
+
 ```
 pi install git:github.com/savinofiore/lexi
 ```
@@ -141,6 +164,10 @@ Verify the extension and skills loaded, then opt a project in:
 ```
 /skill:lexi-init
 ```
+
+If the subagent extension is installed, `init` asks which model to run the gate
+on (`pi --list-models` for the list) and writes `.pi/agents/lexi-gate.md`. Skip
+that prompt to keep the gate inline, no subagent involved.
 
 ### Invocation on Pi
 
@@ -172,6 +199,17 @@ The guard itself needs no invocation on either runtime — it runs on every edit
 ```
 
 Mirror rule: `<source><rel>.<ext>` → `<tests><rel><test_suffix>`. Co-located tests work by setting `tests` equal to `source`.
+
+**Pi only — `gate_agent`**: set by `init` when the subagent extension is
+installed and a model was picked. Its presence means "run the gate through the
+`lexi-gate` subagent", named in `.pi/agents/lexi-gate.md` next to it:
+
+```json
+{ "gate": "npx vitest run", "gate_agent": true, "...": "..." }
+```
+
+Absent (default) — the gate runs inline, in the driving model's own context,
+exactly as before. Claude Code has no subagent equivalent and ignores this key.
 
 ## Commands
 

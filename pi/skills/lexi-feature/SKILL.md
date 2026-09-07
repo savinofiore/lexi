@@ -12,6 +12,11 @@ One flow: analyze → propose tests → confirm → write tests (RED) → write 
 
 Read `.lexi.json` first. No `.lexi.json` → invoke `/skill:lexi-init`.
 
+Running the gate: `.lexi.json` has `"gate_agent": true` → dispatch to the
+`lexi-gate` subagent (`{agent: "lexi-gate", task: "<gate command>", agentScope:
+"project"}`) instead of running it in bash. Otherwise run the gate command
+directly, as before.
+
 ## 1. Understand the feature
 
 Read the code the feature touches. Run the gate to verify starting state. If scope is genuinely open (multiple defensible designs), invoke `/skill:lexi-grill` first, get decisions, then return here.
