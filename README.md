@@ -2,9 +2,11 @@
 
 Test-first workflow for coding agents: analyze task, propose unit tests, confirm, execute RED→GREEN cycle. No spec documents, no cleanup after. Tests are the spec and stay in the repository.
 
+Ships for two agent runtimes: **Claude Code** (plugin) and **Pi** (`@earendil-works/pi-coding-agent`, pi package). Same skills, same guard, same flow — different install path and invocation syntax per runtime.
+
 ## What it does
 
-Three paths from `/lexi:lexi`:
+Three paths from the router skill:
 
 **Bug fix:**
 ```
@@ -20,14 +22,14 @@ feature → propose 3-5 unit tests → confirm + additions
 
 **Feature with open scope:**
 ```
-feature → interrogate with /lexi:grill → settle decisions
+feature → interrogate with the grill skill → settle decisions
        → propose tests based on decisions → confirm
        → test RED → code GREEN (repeat) → report
 ```
 
 ## How it enforces test-first
 
-Two rules, enforced by a git hook:
+Two rules, enforced by a hook (Claude Code) / extension (Pi):
 
 | Rule | Effect |
 |---|---|
@@ -40,7 +42,7 @@ Everything outside `testable` (UI, design tokens, generated code, platform bindi
 
 ## Requires
 
-**Python 3** on `PATH` as `python3`. The guard runs it, so without it every guarded edit fails instead of being checked. macOS and most Linux distributions already have it. On Windows: install Python and verify `python3 --version` answers.
+**Python 3** on `PATH` as `python3`. Both runtimes shell out to the same guard script (`hooks/tdd_guard.py`) — without Python every guarded edit fails instead of being checked. macOS and most Linux distributions already have it. On Windows: install Python and verify `python3 --version` answers.
 
 ```bash
 python3 --version
@@ -53,20 +55,20 @@ python3 --version
 /plugin install ponytail@ponytail
 ```
 
-[ponytail](https://github.com/DietrichGebert/ponytail) governs every GREEN step: does it need to exist, is it already in the codebase, does stdlib/platform do it, can it be one line. It is ambient once installed — lexi does not restate it.
+[ponytail](https://github.com/DietrichGebert/ponytail) governs every GREEN step: does it need to exist, is it already in the codebase, does stdlib/platform do it, can it be one line. It is ambient once installed — lexi does not restate it. Pi does not have a ponytail port yet; on Pi, lexi's own skills carry the same ladder inline for the GREEN step.
 
-**Skills shipped with lexi:**
+**Skills shipped with lexi** (same six, both runtimes):
 
 | Skill | Owns |
 |---|---|
-| `lexi:init` | Project setup: detect stack, find gate command, choose testable paths, write `.lexi.json` |
-| `lexi:lexi` | Router: directs bug/feature/grill/manual flows |
-| `lexi:bug` | Bug fix: rewrite existing tests to prove bug, fix code |
-| `lexi:feature` | Feature: propose unit tests, confirm, RED→GREEN cycle |
-| `lexi:grill` | Scope interrogation: settle open decisions in rounds before writing anything |
-| `lexi:tdd` | Reference: seams, assertions, mocking, anti-patterns, when to test |
+| `init` | Project setup: detect stack, find gate command, choose testable paths, write `.lexi.json` |
+| `lexi` | Router: directs bug/feature/grill/manual flows |
+| `bug` | Bug fix: rewrite existing tests to prove bug, fix code |
+| `feature` | Feature: propose unit tests, confirm, RED→GREEN cycle |
+| `grill` | Scope interrogation: settle open decisions in rounds before writing anything |
+| `tdd` | Reference: seams, assertions, mocking, anti-patterns, when to test |
 
-## Install
+## Install — Claude Code
 
 Dependencies first, lexi last:
 
@@ -100,11 +102,11 @@ Restart the session, then opt a project in:
 /lexi:init
 ```
 
-### Local development
+### Local development (Claude Code)
 
 Only for working *on* lexi. The marketplace takes its name from the manifest, so the clone and GitHub version cannot coexist.
 
-Local (edits to hooks/ and skills/ live immediately):
+Local (edits to `hooks/` and `skills/` live immediately):
 
 ```
 /plugin marketplace add /absolute/path/to/lexi
@@ -120,9 +122,44 @@ Back to GitHub:
 /plugin install lexi@lexi
 ```
 
+## Install — Pi
+
+Lexi ships as a **pi package**: `pi/extensions/lexi-guard.ts` (the guard, wrapping the same `hooks/tdd_guard.py`) and `pi/skills/lexi-*` (the six skills), declared in `package.json`'s `pi` field.
+
+```
+pi install git:github.com/savinofiore/lexi
+```
+
+Or from a local clone, for development (edits to `pi/` live immediately):
+
+```
+pi install /absolute/path/to/lexi
+```
+
+Verify the extension and skills loaded, then opt a project in:
+
+```
+/skill:lexi-init
+```
+
+### Invocation on Pi
+
+Pi has no `/lexi:` namespace or Skill-tool convention — each skill is its own top-level command, `/skill:lexi-<name>`:
+
+| Claude Code | Pi |
+|---|---|
+| `/lexi:init` | `/skill:lexi-init` |
+| `/lexi:lexi <description>` | `/skill:lexi-lexi <description>` |
+| `/lexi:bug <description>` | `/skill:lexi-bug <description>` |
+| `/lexi:feature <description>` | `/skill:lexi-feature <description>` |
+| `/lexi:grill <description>` | `/skill:lexi-grill <description>` |
+| `/lexi:tdd` | `/skill:lexi-tdd` |
+
+The guard itself needs no invocation on either runtime — it runs on every edit/write once `.lexi.json` exists.
+
 ## Configuration
 
-`.lexi.json`, written by `/lexi:init`:
+`.lexi.json`, written by the init skill (same file, same format, both runtimes):
 
 ```json
 {
@@ -138,6 +175,8 @@ Mirror rule: `<source><rel>.<ext>` → `<tests><rel><test_suffix>`. Co-located t
 
 ## Commands
 
+Claude Code syntax shown; see [Invocation on Pi](#invocation-on-pi) for the Pi equivalent of each.
+
 | Command | Use when |
 |---|---|
 | `/lexi:init` | Once per project to setup |
@@ -147,15 +186,15 @@ Mirror rule: `<source><rel>.<ext>` → `<tests><rel><test_suffix>`. Co-located t
 | `/lexi:grill <description>` | Feature with open scope (optional, feature can call it) |
 | `/lexi:tdd` | Reference material for test quality |
 
-The guard runs on every `Edit`/`Write` once `.lexi.json` exists. No invocation needed.
+The guard runs on every `Edit`/`Write` (Claude Code) or `edit`/`write` tool call (Pi) once `.lexi.json` exists. No invocation needed.
 
 ## Flows: detailed
 
 ### Bug fix
 
 ```
-/lexi:lexi <bug description>
-  → routes to /lexi:bug
+lexi router <bug description>
+  → routes to bug skill
     → analyze, find root cause
     → identify existing tests that should fail if bug exists
     → propose rewrites (how to make them RED)
@@ -177,8 +216,8 @@ The guard runs on every `Edit`/`Write` once `.lexi.json` exists. No invocation n
 ### Feature with clear scope
 
 ```
-/lexi:lexi <clear feature description>
-  → routes to /lexi:feature
+lexi router <clear feature description>
+  → routes to feature skill
     → analyze feature
     → propose 3-5 unit tests (no widget tests)
       "applies 10% discount", "caps at 50%", "rejects negative", …
@@ -199,23 +238,23 @@ The guard runs on every `Edit`/`Write` once `.lexi.json` exists. No invocation n
 ### Feature with open scope
 
 ```
-/lexi:lexi <vague feature description>
-  → routes to /lexi:lexi (analyzes scope)
+lexi router <vague feature description>
+  → analyzes scope
   → scope is open (multiple defensible designs)
-    → call /lexi:grill
+    → call the grill skill
       → Q1 with recommendation → your answer
       → Q2 with recommendation → your answer
       → … (blocked questions held for next round)
       → frontier empty → done
-  → back to /lexi:lexi
-    → routes to /lexi:feature
+  → back to lexi router
+    → routes to feature skill
     → same as "feature with clear scope" above
 ```
 
 ### Manual flow (legacy)
 
 ```
-/lexi:lexi <task>
+lexi router <task>
   → analyze code
   → propose seams manually (skips feature)
     seam: function → mirror test file
@@ -270,7 +309,7 @@ Gate green. Report three tests, one file touched, no untested code.
 /lexi:lexi support promo codes at checkout
 ```
 
-Scope is open. Call `/lexi:grill`.
+Scope is open. Call the grill skill.
 
 Rounds:
 1. Q1 — source of truth: hardcoded table, API, or payment provider? → API (table can't expire, provider locks you in)
@@ -279,7 +318,7 @@ Rounds:
 4. Q4 — rejected code: throw or result? → Result (UI needs to show "expired" vs "not found" differently)
 5. Held for round 2: behavior when API is down (needs Q1), second code entered (needs Q2, Q3)
 
-Back to `/lexi:lexi`. Routes to `/lexi:feature`.
+Back to the lexi router. Routes to the feature skill.
 
 Feature proposes:
 - rejects unknown code → `{ ok: false, reason: 'not_found' }`
@@ -291,6 +330,8 @@ Feature proposes:
 Breaking: existing test `total is the sum of line items` will change when we add promo logic.
 
 Confirm. Execute five RED→GREEN loops. Gate green. Report five tests, three files touched.
+
+(Examples use Claude Code's `/lexi:` syntax; swap for `/skill:lexi-*` on Pi.)
 
 ## What the guard blocks
 
@@ -334,7 +375,7 @@ Rewrite the test to new expected behavior, run gate, clear the file:
 
 The release covers one breaking test per slice, never bulk. An assertion discovered "obsolete" mid-implementation is not pre-approved — stop and ask again.
 
-`.lexi/allow` is per-task scratch, gitignored by `/lexi:init`.
+`.lexi/allow` is per-task scratch, gitignored by the init skill.
 
 ## Stack examples
 
@@ -362,11 +403,25 @@ Vitest line is co-located: `tests` equal to `source` maps `src/cart/total.ts` �
 python3 hooks/tdd_guard_test.py
 ```
 
+Repo layout:
+
+```
+hooks/            guard script + its own tests (source of truth for both runtimes)
+skills/           Claude Code skills (init, lexi, bug, feature, grill, tdd)
+.claude-plugin/   Claude Code plugin + marketplace manifests
+pi/extensions/    Pi extension wrapping hooks/tdd_guard.py
+pi/skills/        Pi skills (lexi-init, lexi-lexi, lexi-bug, lexi-feature, lexi-grill, lexi-tdd)
+package.json      Pi package manifest (`pi.extensions`, `pi.skills`)
+```
+
+Both skill sets carry the same flow; changing one (routing logic, stop conditions, test guidance) means changing its counterpart too — there is no shared source for the prose, only for the guard.
+
 ## Known limits
 
-- Guard matches `Edit`/`Write`/`MultiEdit`/`NotebookEdit`. Writes through `Bash` (`sed -i`, heredocs) walk past it.
+- Guard matches `Edit`/`Write`/`MultiEdit`/`NotebookEdit` (Claude Code) or `edit`/`write` (Pi). Writes through `Bash` (`sed -i`, heredocs) walk past it on either runtime.
 - "Rewrite vs append" is substring containment, not a real diff. Hand-crafted edits could fool it.
 - Guard is friction + audit trail, not a wall. An agent can write `.lexi/allow` on its own — the skill says to ask first, and the file records what was released.
+- Ponytail (the GREEN-step ladder) has no Pi port yet; Pi's skills carry the same rules inline instead of delegating to an installed package.
 
 ## License
 

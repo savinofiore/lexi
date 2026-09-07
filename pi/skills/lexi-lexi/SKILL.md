@@ -1,6 +1,6 @@
 ---
 name: lexi-lexi
-description: Test-first flow for a task, bug or feature, with no spec document. Confirms the seams under test in one message, then drives one vertical slice at a time red to green through the project gate. Use whenever a code change is requested in a project with a .lexi.json, or when the lexi guard blocks a write.
+description: Test-first flow for a task, bug or feature, with no spec document. Routes to lexi-feature for clear scope or lexi-grill for open scope, then confirms seams and drives vertical slices red to green. Use whenever a code change is requested in a project with a .lexi.json, or when the lexi guard blocks a write.
 ---
 
 > **Pi:** invoke this skill with `/skill:lexi-lexi`.
@@ -12,15 +12,16 @@ No spec file, no approval file, nothing to clean up afterwards. The tests are th
 spec, and they stay in the repository when the task is done.
 
 Read `.lexi.json` at the project root first: it names the `gate` command, the
-`testable` paths and the mirror rule. No `.lexi.json` → run `/lexi:init` first.
+`testable` paths and the mirror rule. No `.lexi.json` → invoke `/skill:lexi-init`
+first.
 
-This skill owns the protocol and hands the rest off. Test quality lives in
-`lexi:tdd`, scope interrogation in `lexi:grill`, and how much code to write in
-**ponytail**, the one external plugin lexi requires — it is ambient once
-installed, no call needed. If ponytail is missing, say so instead of improvising
-a replacement for it.
+This skill owns routing. Test quality lives in `lexi-tdd`, scope interrogation in
+`lexi-grill`, test proposal in `lexi-feature` (new tests), bug fixing in `lexi-bug`
+(rewrite existing tests), and how much code to write in **ponytail** — the one
+external pi package lexi requires. If ponytail is missing, say so instead of
+improvising.
 
-## 1. Understand
+## 1. Understand and route
 
 Read the code the task actually touches — the file, and the callers of anything
 you are about to change. Run the gate on the affected area to fix the starting
@@ -31,11 +32,20 @@ could plausibly produce the symptom, give the three most likely causes and the
 one log line that separates them, and ask the user to reproduce. A test written
 against a guessed cause goes green while the bug is still there.
 
-**Scope genuinely open** (several designs are defensible, product intent
-unclear)? Call the Skill tool with "lexi:grill" and settle it in rounds. Skip
-it
-when the task is clear — the interview is the expensive part of the old
-process, so here it is opt-in, not a toll on every change.
+**Now choose the path:**
+
+- **Bug report** (existing code is broken, existing tests should fail)? Invoke
+  `/skill:lexi-bug` — rewrite existing tests to prove the bug, then fix production
+  code. That skill owns test rewrites and fix execution.
+
+- **Scope genuinely open** (several designs defensible, product intent unclear)?
+  Invoke `/skill:lexi-grill` first — settle decisions in rounds. Then return here.
+
+- **Scope clear, feature ready?** Invoke `/skill:lexi-feature` — it proposes unit
+  tests, waits for confirmation, then runs full RED→GREEN cycle. That skill owns
+  proposal and execution.
+
+- **Scope clear, manual flow?** Continue to step 2 below (legacy path).
 
 ## 2. Confirm the seams — the only checkpoint
 
@@ -44,8 +54,8 @@ observable without reaching inside. Post, in one message:
 
 - the seams under test, each with its mirror test file
 - one test name per slice, in the order you will write them
-- **feature**: retro-compatible (only new tests) or breaking (which existing
-  tests change behaviour, and which change in expected behaviour forces each)
+- **feature type**: retro-compatible (only new tests) or breaking (which existing
+  tests change behaviour)
 - what the task touches that falls outside `testable`, and gets no test
 
 Then wait. No test is written at an unconfirmed seam. This is the whole of the
@@ -69,9 +79,9 @@ commit to a test shape before the implementation has taught you anything, and
 they go insensitive to real changes. Each slice is a tracer bullet that answers
 to what the last one revealed.
 
-Call the Skill tool with "lexi:tdd" for what makes a test worth keeping —
-seams, assertions, mocking, the anti-patterns. Consult it before and during the
-loop, not after: this skill does not restate any of it.
+Invoke `/skill:lexi-tdd` for what makes a test worth keeping — seams, assertions,
+mocking, the anti-patterns. Consult it before and during the loop, not after:
+this skill does not restate any of it.
 
 ## 4. Stop conditions
 
@@ -90,7 +100,7 @@ Stop and report. Do not push through:
 
 ## 5. Breaking change protocol
 
-Only for tests the user confirmed in step 2:
+Only for tests confirmed in step 2:
 
 1. Write those test paths into `.lexi/allow`, one per line.
 2. Rewrite them to the new expected behaviour — one per slice, never in bulk.

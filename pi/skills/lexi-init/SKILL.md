@@ -12,8 +12,6 @@ The plugin ships the flow and the guard. This writes the project side:
 `.lexi.json`, the only file the guard reads. Without it the guard is dormant and
 the flow has no gate to run.
 
-Invocation: `/lexi:init`
-
 ## 1. Detect the stack
 
 `pubspec.yaml` → Dart/Flutter · `package.json` → Node/TS · `pyproject.toml` or
