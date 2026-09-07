@@ -70,10 +70,8 @@ Then create `.lexi/` containing an empty `allow` file, and add `.lexi/allow` to
 
 ## 5. Gate subagent — optional
 
-Check `test -d ~/.pi/agent/extensions/subagent`. Not installed — skip this
-entirely, the gate runs inline, no `gate_agent` key.
-
-Installed — ask if the user wants the gate offloaded to a subagent. If yes:
+Always ask the user if they want the gate offloaded to a subagent. If no —
+the gate runs inline, no `gate_agent` key. If yes:
 
 1. Run `pi --list-models`, show the table, ask which model runs the gate. A
    fast/cheap one is enough — the job is "run one command, report pass/fail",
