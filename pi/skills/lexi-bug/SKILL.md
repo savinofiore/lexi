@@ -12,6 +12,11 @@ Bug fix: existing tests become RED to prove the bug, then production code become
 
 Read `.lexi.json` first. No `.lexi.json` → invoke `/skill:lexi-init`.
 
+Running the gate: `.lexi.json` has `"gate_agent": true` → dispatch to the
+`lexi-gate` subagent (`{agent: "lexi-gate", task: "<gate command>", agentScope:
+"project"}`) instead of running it in bash. Otherwise run the gate command
+directly, as before.
+
 ## 1. Understand and diagnose
 
 Read the code the bug report names. Run the gate on the affected area to verify

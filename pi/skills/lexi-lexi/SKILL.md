@@ -15,6 +15,11 @@ Read `.lexi.json` at the project root first: it names the `gate` command, the
 `testable` paths and the mirror rule. No `.lexi.json` → invoke `/skill:lexi-init`
 first.
 
+Running the gate: `.lexi.json` has `"gate_agent": true` → dispatch to the
+`lexi-gate` subagent (`{agent: "lexi-gate", task: "<gate command>", agentScope:
+"project"}`) instead of running it in bash. Otherwise run the gate command
+directly, as before.
+
 This skill owns routing. Test quality lives in `lexi-tdd`, scope interrogation in
 `lexi-grill`, test proposal in `lexi-feature` (new tests), bug fixing in `lexi-bug`
 (rewrite existing tests), and how much code to write in **ponytail** — the one

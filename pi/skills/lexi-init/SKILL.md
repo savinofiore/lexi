@@ -68,7 +68,34 @@ too — set `tests` equal to `source` and `test_suffix` to `.test.ts`, giving
 Then create `.lexi/` containing an empty `allow` file, and add `.lexi/allow` to
 `.gitignore` — it is per-task scratch, not shared state.
 
-## 5. Verify before declaring done
+## 5. Gate subagent — optional
+
+Check `test -d ~/.pi/agent/extensions/subagent`. Not installed — skip this
+entirely, the gate runs inline, no `gate_agent` key.
+
+Installed — ask if the user wants the gate offloaded to a subagent. If yes:
+
+1. Run `pi --list-models`, show the table, ask which model runs the gate. A
+   fast/cheap one is enough — the job is "run one command, report pass/fail",
+   not reasoning.
+2. Write `.pi/agents/lexi-gate.md`:
+
+```markdown
+---
+name: lexi-gate
+description: Runs the project's lexi gate command and reports pass/fail.
+tools: bash
+model: <chosen model id, e.g. anthropic/claude-haiku-4-5>
+---
+
+Run exactly the command given in the task, once. Do not edit files. Report:
+- PASS, or
+- FAIL, with only the failing assertion/stack trace — not the full log.
+```
+
+3. Add `"gate_agent": true` to `.lexi.json`.
+
+## 6. Verify before declaring done
 
 1. Run the gate command once. It has to pass, or the starting state is already
    broken and the user needs to know that first.
@@ -80,4 +107,4 @@ Then create `.lexi/` containing an empty `allow` file, and add `.lexi/allow` to
    it one file at a time as the code gets touched.
 
 Report the gate command, the `testable` list, what you deliberately left out,
-and that count.
+that count, and — if set — the model running the gate subagent.
