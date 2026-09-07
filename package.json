@@ -1,0 +1,16 @@
+{
+  "name": "lexi",
+  "version": "0.1.1",
+  "description": "Test-first workflow and write guard for coding agents.",
+  "license": "MIT",
+  "keywords": ["pi-package", "tdd", "test-driven", "workflow"],
+  "repository": "https://github.com/savinofiore/lexi",
+  "files": ["pi", "hooks", "skills", "README.md", "LICENSE"],
+  "peerDependencies": {
+    "@earendil-works/pi-coding-agent": "*"
+  },
+  "pi": {
+    "extensions": ["./pi/extensions"],
+    "skills": ["./pi/skills"]
+  }
+}

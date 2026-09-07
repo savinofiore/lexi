@@ -82,7 +82,7 @@ Check what landed:
 /plugin
 ```
 
-`lexi 0.1.0` should list **4 skills** (`init`, `lexi`, `tdd`, `grill`) and **1
+`lexi 0.1.1` should list **4 skills** (`init`, `lexi`, `tdd`, `grill`) and **1
 PreToolUse hook**. The same works from the shell, outside a session:
 
 ```
@@ -96,6 +96,20 @@ Restart the session so the hook and the skills load, then opt a project in:
 ```
 /lexi:init
 ```
+
+### Pi
+
+Install globally from GitHub (no local clone required):
+
+```bash
+pi install git:github.com/savinofiore/lexi
+```
+
+Pi loads namespaced skills so they can coexist with other packages:
+`/skill:lexi-init`, `/skill:lexi-lexi`, `/skill:lexi-grill`, and
+`/skill:lexi-tdd`. The same write guard intercepts Pi's `edit` and `write`
+tools. Restart Pi after installation, then run `/skill:lexi-init` in each
+project you want to opt in. Python 3 remains required for the guard.
 
 Until that project has a `.lexi.json` the guard is dormant and nothing changes —
 installing lexi does not alter how any other repository behaves.
