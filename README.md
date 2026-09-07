@@ -193,9 +193,9 @@ The guard itself needs no invocation on either runtime — it runs on every edit
 
 Mirror rule: `<source><rel>.<ext>` → `<tests><rel><test_suffix>`. Co-located tests work by setting `tests` equal to `source`.
 
-**Pi only — `gate_agent`**: set by `init` when the subagent extension is
-installed and a model was picked. Its presence means "run the gate through the
-`lexi-gate` subagent", named in `.pi/agents/lexi-gate.md` next to it:
+**Pi only — `gate_agent`**: set by `init` when the user opts in and a model is
+picked. Its presence means "run the gate through the `lexi-gate` subagent",
+named in `.pi/agents/lexi-gate.md` next to it:
 
 ```json
 { "gate": "npx vitest run", "gate_agent": true, "...": "..." }

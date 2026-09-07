@@ -68,10 +68,15 @@ too — set `tests` equal to `source` and `test_suffix` to `.test.ts`, giving
 Then create `.lexi/` containing an empty `allow` file, and add `.lexi/allow` to
 `.gitignore` — it is per-task scratch, not shared state.
 
-## 5. Gate subagent — optional
+## 5. Gate subagent — mandatory question, optional feature
 
-Always ask the user if they want the gate offloaded to a subagent. If no —
-the gate runs inline, no `gate_agent` key. If yes:
+STOP. Before writing any file, ask the user this exact question and wait for
+a reply — do not infer an answer, do not skip it because a gate command was
+found, do not proceed to step 6 without it:
+
+> Want the gate offloaded to a subagent (`lexi-gate`), or run it inline?
+
+If inline — no `gate_agent` key, move to step 6. If subagent:
 
 1. Run `pi --list-models`, show the table, ask which model runs the gate. A
    fast/cheap one is enough — the job is "run one command, report pass/fail",
