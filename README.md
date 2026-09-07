@@ -134,18 +134,11 @@ you pick, instead of the driving model spending its own context on test
 output. Skip this if you don't want that — everything runs inline exactly as
 before.
 
-Install the official subagent example extension — it ships inside the `pi`
-package itself, no separate download:
+Install it as a pi package:
 
-```bash
-PI_PKG="$(npm root -g)/@earendil-works/pi-coding-agent"
-mkdir -p ~/.pi/agent/extensions/subagent
-ln -sf "$PI_PKG/examples/extensions/subagent/index.ts" ~/.pi/agent/extensions/subagent/index.ts
-ln -sf "$PI_PKG/examples/extensions/subagent/agents.ts" ~/.pi/agent/extensions/subagent/agents.ts
 ```
-
-If `pi` was installed some other way, `$(npm root -g)` won't resolve — find the
-package's install path and point the symlinks there instead.
+pi install npm:pi-subagents
+```
 
 Dependencies first, lexi last:
 
