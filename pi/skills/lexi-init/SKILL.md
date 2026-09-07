@@ -76,12 +76,17 @@ found, do not proceed to step 6 without it:
 
 > Want the gate offloaded to a subagent (`lexi-gate`), or run it inline?
 
-If inline — no `gate_agent` key, move to step 6. If subagent:
+If inline — no `gate_agent` key, move to step 6. If subagent, ask these in
+order:
 
-1. Run `pi --list-models`, show the table, ask which model runs the gate. A
-   fast/cheap one is enough — the job is "run one command, report pass/fail",
-   not reasoning.
-2. Write `.pi/agents/lexi-gate.md`:
+1. **Which model?** Run `pi --list-models`, show the table, let the user pick.
+   A fast/cheap one is enough — the job is "run one command, report
+   pass/fail", not reasoning.
+2. **What do you want it to do, beyond running the gate and reporting
+   pass/fail?** Default is nothing extra. Fold any answer into the prompt
+   below as-is — do not invent scope it didn't ask for.
+
+Write `.pi/agents/lexi-gate.md` with the answers:
 
 ```markdown
 ---
@@ -94,9 +99,11 @@ model: <chosen model id, e.g. anthropic/claude-haiku-4-5>
 Run exactly the command given in the task, once. Do not edit files. Report:
 - PASS, or
 - FAIL, with only the failing assertion/stack trace — not the full log.
+
+<user's extra instructions from question 2, if any>
 ```
 
-3. Add `"gate_agent": true` to `.lexi.json`.
+Add `"gate_agent": true` to `.lexi.json`.
 
 ## 6. Verify before declaring done
 
