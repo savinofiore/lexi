@@ -64,3 +64,10 @@ silently assumed. Say so and wait for confirmation before acting.
 
 A grilling that slides straight into implementation has skipped the only step
 that made it worth running.
+
+## Next step: from grill to feature
+
+Once all decisions are settled, return to `/lexi:lexi` with the answers. The flow
+will route to `lexi:feature`, which proposes unit tests based on the scope you
+just grilled. Answer the test proposal the same way you answered grill questions:
+approve them, suggest additions, wait for confirmation before code is written.
