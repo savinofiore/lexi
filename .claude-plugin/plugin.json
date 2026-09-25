@@ -17,6 +17,10 @@
   ],
   "dependencies": [
     {
+      "name": "ponytail",
+      "marketplace": "ponytail"
+    },
+    {
       "name": "caveman",
       "marketplace": "caveman"
     }
