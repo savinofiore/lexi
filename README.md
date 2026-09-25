@@ -50,7 +50,8 @@ Everything outside `testable` (UI, design tokens, generated code, platform bindi
 | What | Needed for | Check |
 |---|---|---|
 | **Python 3** as `python3` | the guard on both runtimes (`hooks/tdd_guard.py`), and jev's review | `python3 --version` |
-| **[ponytail](https://github.com/DietrichGebert/ponytail)** | Claude Code only: governs every GREEN step (does it need to exist, is it already here, does stdlib do it, can it be one line). Pi has no port: lexi's Pi skills carry the same ladder inline | `/plugin` lists it |
+| **[ponytail](https://github.com/DietrichGebert/ponytail)** | Claude Code only: governs every GREEN step (does it need to exist, is it already here, does stdlib do it, can it be one line). Declared in lexi's `plugin.json` `dependencies`, installed with lexi. Pi has no port: lexi's Pi skills carry the same ladder inline | `/plugin` lists it |
+| **[caveman](https://github.com/JuliusBrussee/caveman)** | Claude Code only: terse output in every session. Declared in lexi's `plugin.json` `dependencies`, so installing lexi installs it once its marketplace is added | `/plugin` lists it |
 | **[pi-subagents](https://www.npmjs.com/package/pi-subagents)** | Pi only, optional: runs the gate in an isolated subagent | `pi list` |
 | **`TYPESAFE_API_KEY`** | jev only, optional | see [jev](jev/README.md#requirements) |
 | **Claude Code ≥ 2.1.276** | jev's router and compaction hooks | `claude --version` |
@@ -75,11 +76,11 @@ seven come in the one lexi package, named `lexi-*` and `jev-code-review`.
 
 ## Install — Claude Code
 
-**1. Plugins** — dependencies first, lexi next, jev only if you want it:
+**1. Plugins** — add the dependencies' marketplaces, then lexi (it installs ponytail and caveman), jev only if you want it:
 
 ```
-/plugin marketplace add DietrichGebert/ponytail
-/plugin install ponytail@ponytail
+/plugin marketplace add DietrichGebert/ponytail   # lexi installs ponytail from here
+/plugin marketplace add JuliusBrussee/caveman     # and caveman from here
 
 /plugin marketplace add savinofiore/lexi
 /plugin install lexi@lexi
