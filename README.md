@@ -111,7 +111,10 @@ the project's settings only in a trusted folder), then:
 /lexi:init
 ```
 
-`init` writes `.lexi.json` and asks whether to enable Jev. On yes it adds `"jev": {}` to `.lexi.json`, puts
+`init` writes `.lexi.json`, and in `.claude/settings.json` it adds the lexi, ponytail and caveman marketplaces
+under `extraKnownMarketplaces` with `autoUpdate: true`, plus `enabledPlugins: { "lexi@lexi": true }`. Commit
+that file: teammates who trust the folder are offered lexi, and every later version reaches them with the
+dependencies it adds (third-party marketplaces do not auto-update by default). Then it asks whether to enable Jev. On yes it adds `"jev": {}` to `.lexi.json`, puts
 `CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1` and `CLAUDE_AUTOCOMPACT_PCT_OVERRIDE=50` in `.claude/settings.json`, and
 writes two project shims, `.claude/skills/code-review/` and `.claude/skills/review/`: a project skill replaces
 the built-in one of the same name, so in that project `/code-review` and `/review` run Jev's review. Delete
