@@ -17,5 +17,5 @@
       "@earendil-works/pi-coding-agent": ["/opt/homebrew/lib/node_modules/@earendil-works/pi-coding-agent/dist/index.d.ts"]
     }
   },
-  "include": ["extensions/jev-router", "extensions/jev-compact", "../jev/shared"]
+  "include": ["extensions/lexi-init.ts", "extensions/caveman.ts", "extensions/jev-router", "extensions/jev-compact", "../jev/shared"]
 }
