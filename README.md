@@ -13,21 +13,24 @@ Three paths from the router skill:
 **Bug fix:**
 ```
 bug report → identify failing tests → rewrite tests to RED (prove bug)
-          → fix production code to GREEN → report
+          → fix production code to GREEN → [Jev review] → report
 ```
 
 **Feature with clear scope:**
 ```
 feature → propose 3-5 unit tests → confirm + additions
-       → test RED → code GREEN (repeat per test) → report
+       → test RED → code GREEN (repeat per test) → [Jev review] → report
 ```
 
 **Feature with open scope:**
 ```
 feature → interrogate with the grill skill → settle decisions
        → propose tests based on decisions → confirm
-       → test RED → code GREEN (repeat) → report
+       → test RED → code GREEN (repeat) → [Jev review] → report
 ```
+
+`[Jev review]` runs only when the project enabled Jev in `init`: the verdict comes from the policy, fixes
+are proposed and confirmed, and a fix under `testable` goes back through RED→GREEN. See [jev](jev/README.md).
 
 ## How it enforces test-first
 
@@ -44,35 +47,35 @@ Everything outside `testable` (UI, design tokens, generated code, platform bindi
 
 ## Requires
 
-**Python 3** on `PATH` as `python3`. Both runtimes shell out to the same guard script (`hooks/tdd_guard.py`) — without Python every guarded edit fails instead of being checked. macOS and most Linux distributions already have it. On Windows: install Python and verify `python3 --version` answers.
+| What | Needed for | Check |
+|---|---|---|
+| **Python 3** as `python3` | the guard on both runtimes (`hooks/tdd_guard.py`), and jev's review | `python3 --version` |
+| **[ponytail](https://github.com/DietrichGebert/ponytail)** | Claude Code only: governs every GREEN step (does it need to exist, is it already here, does stdlib do it, can it be one line). Pi has no port: lexi's Pi skills carry the same ladder inline | `/plugin` lists it |
+| **[pi-subagents](https://www.npmjs.com/package/pi-subagents)** | Pi only, optional: runs the gate in an isolated subagent | `pi list` |
+| **`TYPESAFE_API_KEY`** | jev only, optional | see [jev](jev/README.md#requirements) |
+| **Claude Code ≥ 2.1.276** | jev's router and compaction hooks | `claude --version` |
 
-```bash
-python3 --version
-```
+Without Python every guarded edit fails instead of being checked. macOS and most Linux distributions already
+have it; on Windows install it and verify `python3 --version` answers.
 
-**One external plugin: ponytail**
-
-```
-/plugin marketplace add DietrichGebert/ponytail
-/plugin install ponytail@ponytail
-```
-
-[ponytail](https://github.com/DietrichGebert/ponytail) governs every GREEN step: does it need to exist, is it already in the codebase, does stdlib/platform do it, can it be one line. It is ambient once installed — lexi does not restate it. Pi does not have a ponytail port yet; on Pi, lexi's own skills carry the same ladder inline for the GREEN step.
-
-**Skills shipped with lexi** (same six, both runtimes):
+**What ships**
 
 | Skill | Owns |
 |---|---|
-| `init` | Project setup: detect stack, find gate command, choose testable paths, write `.lexi.json` |
+| `init` | Project setup: detect stack, find gate command, choose testable paths, ask about Jev, write `.lexi.json` |
 | `lexi` | Router: directs bug/feature/grill/manual flows |
 | `bug` | Bug fix: rewrite existing tests to prove bug, fix code |
 | `feature` | Feature: propose unit tests, confirm, RED→GREEN cycle |
 | `grill` | Scope interrogation: settle open decisions in rounds before writing anything |
 | `tdd` | Reference: seams, assertions, mocking, anti-patterns, when to test |
+| `code-review` (jev) | Jev review of a diff; the bug and feature flows call it after the last GREEN when Jev is on |
+
+On Claude Code the first six are the `lexi` plugin and `code-review` is the separate `jev` plugin. On Pi all
+seven come in the one lexi package, named `lexi-*` and `jev-code-review`.
 
 ## Install — Claude Code
 
-Dependencies first, lexi last:
+**1. Plugins** — dependencies first, lexi next, jev only if you want it:
 
 ```
 /plugin marketplace add DietrichGebert/ponytail
@@ -80,89 +83,112 @@ Dependencies first, lexi last:
 
 /plugin marketplace add savinofiore/lexi
 /plugin install lexi@lexi
+/plugin install jev@lexi        # optional
 ```
 
-Verify:
-
-```
-/plugin
-```
-
-Should show `lexi` with **6 skills** (`init`, `lexi`, `bug`, `feature`, `tdd`, `grill`) and **1 PreToolUse hook**.
-
-From shell (outside Claude):
+From a shell, outside Claude:
 
 ```bash
 claude plugin marketplace add savinofiore/lexi
 claude plugin install lexi@lexi
-claude plugin details lexi@lexi
+claude plugin install jev@lexi   # optional
 ```
 
-Restart the session, then opt a project in:
+**2. Jev key** (only with jev) — in `~/.claude/settings.json`, never in a committed project file:
+
+```json
+{ "env": { "TYPESAFE_API_KEY": "..." } }
+```
+
+**3. Verify** — restart the session and run `/plugin`:
+
+- `lexi`: **6 skills** (`init`, `lexi`, `bug`, `feature`, `tdd`, `grill`) and **1 PreToolUse hook**;
+- `jev`: **1 skill** (`code-review`) and **1 hooks module**.
+
+**4. Opt the project in** — open `claude` in the project folder, accept the trust prompt (Claude Code reads
+the project's settings only in a trusted folder), then:
 
 ```
 /lexi:init
 ```
 
+`init` writes `.lexi.json` and asks whether to enable Jev. On yes it adds `"jev": {}` to `.lexi.json` and, in
+`.claude/settings.json`, `CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1` and `CLAUDE_AUTOCOMPACT_PCT_OVERRIDE=50`. The
+next session confirms the router on its first prompt: `[jev-router] session: …`.
+
 ### Local development (Claude Code)
 
-Only for working *on* lexi. The marketplace takes its name from the manifest, so the clone and GitHub version cannot coexist.
+Only for working *on* lexi. The marketplace takes its name from the manifest, so the clone and GitHub version
+cannot coexist.
 
-Local (edits to `hooks/` and `skills/` live immediately):
+Local (edits to `hooks/`, `skills/` and `jev/` live immediately):
 
 ```
 /plugin marketplace add /absolute/path/to/lexi
 /plugin install lexi@lexi
+/plugin install jev@lexi
+```
+
+For one session only, without touching your installed plugins:
+
+```bash
+CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1 claude --plugin-dir /absolute/path/to/lexi/jev
 ```
 
 Back to GitHub:
 
 ```
+/plugin uninstall jev@lexi
 /plugin uninstall lexi@lexi
 /plugin marketplace remove lexi
 /plugin marketplace add savinofiore/lexi
 /plugin install lexi@lexi
+/plugin install jev@lexi
 ```
 
 ## Install — Pi
 
-Lexi ships as a **pi package**: `pi/extensions/lexi-guard.ts` (the guard, wrapping the same `hooks/tdd_guard.py`) and `pi/skills/lexi-*` (the six skills), declared in `package.json`'s `pi` field.
+Lexi ships as one **pi package**, declared in `package.json`'s `pi` field:
 
-**One optional extension: subagent**
+- `pi/extensions/lexi-guard.ts`: the guard, wrapping the same `hooks/tdd_guard.py`;
+- `pi/extensions/jev-router/`, `pi/extensions/jev-compact/`: jev, inert until a project opts in;
+- `pi/skills/`: `lexi-init`, `lexi-lexi`, `lexi-bug`, `lexi-feature`, `lexi-grill`, `lexi-tdd`, `jev-code-review`.
 
-Pi core ships no subagents by design. Lexi's `init` skill can offload the gate
-(the test-suite run inside RED/GREEN) to an isolated subagent running a model
-you pick, instead of the driving model spending its own context on test
-output. Skip this if you don't want that — everything runs inline exactly as
-before.
-
-Install it as a pi package:
+**1. Packages** — the optional subagent extension first, lexi last:
 
 ```
-pi install npm:pi-subagents
-```
-
-Dependencies first, lexi last:
-
-```
+pi install npm:pi-subagents                  # optional: gate in a subagent
 pi install git:github.com/savinofiore/lexi
 ```
 
-Or from a local clone, for development (edits to `pi/` live immediately):
+From a local clone, for development (edits to `pi/` and `jev/` live immediately):
 
 ```
 pi install /absolute/path/to/lexi
 ```
 
-Verify the extension and skills loaded, then opt a project in:
+**2. Jev key** (only if you will enable Jev) — export it in the shell Pi starts from; Pi has no `env` block,
+so as a fallback it reads `env.TYPESAFE_API_KEY` from `~/.claude/settings.json`:
+
+```bash
+export TYPESAFE_API_KEY=...
+```
+
+**3. Opt the project in** — Pi loads project files only in an approved folder (accept the prompt once, or
+`pi -a` for one run), then:
 
 ```
 /skill:lexi-init
 ```
 
-If the subagent extension is installed, `init` asks which model to run the gate
-on (`pi --list-models` for the list) and writes `.pi/agents/lexi-gate.md`. Skip
-that prompt to keep the gate inline, no subagent involved.
+`init` asks two mandatory questions besides the gate and the testable paths:
+
+- **gate subagent** — with pi-subagents installed, which model runs the gate; it writes
+  `.pi/agents/lexi-gate.md` and `"gate_agent": true`. Say inline to keep the gate in the driving model;
+- **Jev** — on yes, which model per tier (`pi --list-models`); it writes `"jev": { "tiers": … }` in
+  `.lexi.json` and `compaction.modelOverrides` in `.pi/settings.json`, so compaction runs at ~50%.
+
+Without the `jev` key the jev extensions do nothing, even though the package is installed.
 
 ### Invocation on Pi
 
@@ -254,6 +280,7 @@ lexi router <bug description>
       ❌ gate fails after 3 attempts → report, stop
       ❌ test green without fix → fix was unnecessary → go back
     → empty .lexi/allow
+    → Jev review (if enabled): verdict, located findings, confirmed fixes via RED→GREEN
     → report: files touched, root cause fixed, tests stay as regression
 ```
 
@@ -276,6 +303,7 @@ lexi router <clear feature description>
         ❌ gate passes → test asserts nothing → verify
       2. GREEN: write production code (minimal, ponytail governs)
       3. run gate → passes → next test
+    → Jev review (if enabled): verdict, located findings, confirmed fixes via RED→GREEN
     → report: tests written (files, names), production files touched, untested code and why
 ```
 
