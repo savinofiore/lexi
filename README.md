@@ -209,6 +209,32 @@ Pi has no `/lexi:` namespace or Skill-tool convention — each skill is its own 
 
 The guard itself needs no invocation on either runtime — it runs on every edit/write once `.lexi.json` exists.
 
+## Updating
+
+An update never breaks a project that is already set up: the guard reads only its own keys in `.lexi.json`,
+and every new step stays off until the project opts in (the Jev review runs only when `jev` is an object).
+
+**Claude Code**
+
+```
+/plugin marketplace update lexi
+/plugin update lexi@lexi
+/plugin install jev@lexi          # new in 0.2.0, only if you want Jev
+```
+
+**Pi**
+
+```
+pi update git:github.com/savinofiore/lexi
+```
+
+The jev extensions arrive with the package but stay inert without a `jev` object in `.lexi.json`.
+
+**Then, per project, rerun init** (`/lexi:init` or `/skill:lexi-init`). On an existing `.lexi.json` it runs
+as an update: it shows and keeps `gate`, `testable` and the rest, and asks only what the new version added —
+today the Jev question. A "no" is saved as `"jev": false`, so the next update run does not ask again. Skipping
+this step is fine: the project keeps working exactly as before, without Jev.
+
 ## Configuration
 
 `.lexi.json`, written by the init skill (same file, same format, both runtimes):

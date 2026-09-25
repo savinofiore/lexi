@@ -1,6 +1,6 @@
 ---
 name: init
-description: Set up lexi in a project — detect the stack, find the real gate command, choose the testable whitelist, and write .lexi.json plus .lexi/. Run once per project after installing the plugin. Use when the user says "lexi init", "set up lexi", or the guard reports it is dormant.
+description: Set up lexi in a project — detect the stack, find the real gate command, choose the testable whitelist, and write .lexi.json plus .lexi/. Run once per project after installing the plugin, and again after updating lexi: on an existing .lexi.json it only asks what the new version added. Use when the user says "lexi init", "set up lexi", or the guard reports it is dormant.
 ---
 
 # init — opt this project into lexi
@@ -10,6 +10,21 @@ The plugin ships the flow and the guard. This writes the project side:
 the flow has no gate to run.
 
 Invocation: `/lexi:init`
+
+## 0. Already set up? Update, do not redo
+
+`.lexi.json` exists → this is an update run, not a fresh setup. Show the current
+`gate`, `source`, `tests`, `test_suffix` and `testable`, and keep them: do not
+re-detect or rewrite them unless the user asks to. Skip steps 1–4 and ask only
+the questions this version added whose answer is missing:
+
+- no `jev` key → step 5 (Jev). `"jev": false` means the user already said no —
+  do not ask again unless they bring it up;
+- `jev` is an object but `.claude/skills/code-review/` or
+  `.claude/skills/review/` is missing → write the missing shim (step 5).
+
+Then step 6. Nothing missing → say the project is up to date and run step 6
+only.
 
 ## 1. Detect the stack
 
@@ -75,7 +90,7 @@ answer, do not skip it:
 > Enable Jev in this project (model router, verbatim compaction, code review
 > after the last GREEN)? It calls TypeSafe's API with `TYPESAFE_API_KEY`.
 
-No → no `jev` key, move to step 6. Yes → check the prerequisites and name any
+No → write `"jev": false` in `.lexi.json` (so an update run does not ask again), move to step 6. Yes → check the prerequisites and name any
 that is missing; the user fixes them, you never ask for the key in chat:
 
 - the jev plugin: `/plugin install jev@lexi` (same marketplace as lexi);

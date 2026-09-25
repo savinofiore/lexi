@@ -14,7 +14,11 @@ const readJson = <T>(path: string): T | undefined => {
   }
 }
 
-export const jevConfig = (cwd: string): JevConfig | undefined => readJson<{ jev?: JevConfig }>(join(cwd, '.lexi.json'))?.jev
+// `"jev": false` records that the user said no: only an object turns jev on.
+export const jevConfig = (cwd: string): JevConfig | undefined => {
+  const jev = readJson<{ jev?: unknown }>(join(cwd, '.lexi.json'))?.jev
+  return typeof jev === 'object' && jev !== null ? (jev as JevConfig) : undefined
+}
 
 // Pi has no `env` block in its settings: the key is exported in the shell. As a fallback read the
 // one Claude Code keeps in ~/.claude/settings.json, so on one machine it lives in one place. The
