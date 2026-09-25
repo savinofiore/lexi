@@ -1,0 +1,21 @@
+{
+  "comment": "Type-check only for the Pi extensions: at runtime Pi loads them through jiti, no build. The package path points at a global pi install (brew); adjust it to yours.",
+  "compilerOptions": {
+    "target": "es2023",
+    "lib": ["es2023", "dom"],
+    "types": ["node"],
+    "typeRoots": ["/opt/homebrew/lib/node_modules/@earendil-works/pi-coding-agent/node_modules/@types"],
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "baseUrl": ".",
+    "paths": {
+      "@earendil-works/pi-coding-agent": ["/opt/homebrew/lib/node_modules/@earendil-works/pi-coding-agent/dist/index.d.ts"]
+    }
+  },
+  "include": ["extensions/jev-router", "extensions/jev-compact", "../jev/shared"]
+}
