@@ -92,6 +92,30 @@ Then write, merging into existing files and never overwriting other keys:
   `"CLAUDE_AUTOCOMPACT_PCT_OVERRIDE": "50"` (compaction runs earlier, so Jev
   prunes while the context is still cheap to rewrite).
 
+- `.claude/skills/code-review/SKILL.md` and `.claude/skills/review/SKILL.md` —
+  two project shims. A project skill replaces the built-in skill of the same
+  name, and `/review` needs its own file, so in this project both commands run
+  Jev's review. They are meant to be committed: the whole team gets the same
+  review. If either file already exists, show it and ask before replacing it.
+
+  ```markdown
+  ---
+  name: code-review
+  description: Code review in this project goes through Jev (jev plugin), replacing Claude Code's built-in review. Use for "/code-review", "review the diff", "can I merge?", "is this code ok?", a PR number, a git ref or a .diff/.patch file.
+  ---
+
+  This project routes code review to Jev. Invoke the `jev:code-review` skill
+  with these arguments and follow it: $ARGUMENTS
+
+  If that skill is not available, the jev plugin is not installed: say so and
+  stop — do not review on your own. The fix is `/plugin install jev@lexi`, or
+  deleting `.claude/skills/code-review/` and `.claude/skills/review/` to get the
+  built-in review back.
+  ```
+
+  `review/SKILL.md` is the same file with `name: review` and `"/review"` in
+  place of `"/code-review"` in the description.
+
 Say that the project's own conventions can be added to the review later in
 `.lexi/review.json` (see the jev README) — do not write that file now.
 

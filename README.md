@@ -112,9 +112,12 @@ the project's settings only in a trusted folder), then:
 /lexi:init
 ```
 
-`init` writes `.lexi.json` and asks whether to enable Jev. On yes it adds `"jev": {}` to `.lexi.json` and, in
-`.claude/settings.json`, `CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1` and `CLAUDE_AUTOCOMPACT_PCT_OVERRIDE=50`. The
-next session confirms the router on its first prompt: `[jev-router] session: …`.
+`init` writes `.lexi.json` and asks whether to enable Jev. On yes it adds `"jev": {}` to `.lexi.json`, puts
+`CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1` and `CLAUDE_AUTOCOMPACT_PCT_OVERRIDE=50` in `.claude/settings.json`, and
+writes two project shims, `.claude/skills/code-review/` and `.claude/skills/review/`: a project skill replaces
+the built-in one of the same name, so in that project `/code-review` and `/review` run Jev's review. Delete
+the two folders to get the built-in review back. The next session confirms the router on its first prompt:
+`[jev-router] session: …`.
 
 ### Local development (Claude Code)
 
@@ -254,7 +257,7 @@ Claude Code syntax shown; see [Invocation on Pi](#invocation-on-pi) for the Pi e
 | `/lexi:feature <description>` | Feature with clear scope |
 | `/lexi:grill <description>` | Feature with open scope (optional, feature can call it) |
 | `/lexi:tdd` | Reference material for test quality |
-| `/jev:code-review` | Jev review of the working tree, a ref, a PR or a diff (jev plugin; the flows call it on their own) |
+| `/jev:code-review` | Jev review of the working tree, a ref, a PR or a diff (jev plugin; the flows call it on their own). With Jev on, `/code-review` and `/review` route here too |
 
 The guard runs on every `Edit`/`Write` (Claude Code) or `edit`/`write` tool call (Pi) once `.lexi.json` exists. No invocation needed.
 

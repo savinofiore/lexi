@@ -33,8 +33,13 @@ flows.
 
 `init` asks whether to enable Jev and, on yes, writes `"jev": {}` in `.lexi.json` (the review step) and, in the
 project's `.claude/settings.json`, `CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1` (the hooks module stays off without it)
-and `CLAUDE_AUTOCOMPACT_PCT_OVERRIDE=50`. The project folder must be trusted, or Claude Code does not read the
-project `env`.
+and `CLAUDE_AUTOCOMPACT_PCT_OVERRIDE=50`. It also writes two project shims, `.claude/skills/code-review/SKILL.md`
+and `.claude/skills/review/SKILL.md`, that hand off to `jev:code-review`: a project skill replaces the built-in
+skill of the same name, and `/review` needs its own file. Commit them so the team shares the review; delete them
+to get the built-in review back. The project folder must be trusted, or Claude Code reads neither the project
+`env` nor its skills.
+
+Pi has no built-in code review, so there is nothing to replace: the skill is `/skill:jev-code-review`.
 
 **Pi** — jev ships inside the lexi package. `/skill:lexi-init` asks whether to enable it, which model to use
 per tier, and writes a `jev` object in `.lexi.json`; without that object the extensions do nothing, even when
@@ -84,7 +89,8 @@ python3 jev/review/review.py ... --compare before.json        # after a fix: per
 ```
 
 Exit codes: 0 MERGE, 1 NITS/CONVENTIONS/QUALITY ("fix before merge, no risk outside the codebase"), 2 SECURITY
-REVIEW, 3 BLOCK, 4 error. From an agent: `/jev:code-review` (Claude Code) or `/skill:jev-code-review` (Pi).
+REVIEW, 3 BLOCK, 4 error. From an agent: `/jev:code-review` (Claude Code; `/code-review` and `/review` too in a project `init` set up) or
+`/skill:jev-code-review` (Pi).
 
 | File | Holds |
 |---|---|
