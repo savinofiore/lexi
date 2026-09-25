@@ -147,13 +147,16 @@ key in chat. Then ask:
    (mechanical work), `balanced` (ordinary engineering), `deep` (hard or
    high-stakes). Run `pi --list-models`, show the table, propose one model per
    tier, let the user confirm or change. Defaults if the user keeps them:
-   `anthropic/claude-sonnet-5`, `anthropic/claude-opus-5-5`,
-   `anthropic/claude-fable-5-1`.
+   `claude-sonnet-5`, `claude-opus-5-5`, `claude-fable-5-1`, resolved on the
+   provider the session already runs on (a `claude-bridge` session stays on
+   the bridge). Propose the same: bare ids unless the user wants a tier on
+   another provider.
 
 Write, merging into existing files and never overwriting other keys:
 
-- `.lexi.json` → `"jev": { "tiers": { "fast": "<provider/id>", "balanced": "<provider/id>", "deep": "<provider/id>" } }`
-  (omit `tiers` if the user kept the defaults). The `jev` key is what turns on
+- `.lexi.json` → `"jev": { "tiers": { "fast": "<id>", "balanced": "<id>", "deep": "<id>" } }`
+  (omit `tiers` if the user kept the defaults; `provider/id` pins a tier to
+  that provider, a bare id follows the session's provider). The `jev` key is what turns on
   the router and compaction extensions and the review step of the flows.
 - `.pi/settings.json` → `compaction.modelOverrides`: for each tier model, set
   `reserveTokens` to half its context window from the `pi --list-models` table,

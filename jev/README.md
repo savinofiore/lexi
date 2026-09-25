@@ -41,10 +41,12 @@ per tier, and writes a `jev` object in `.lexi.json`; without that object the ext
 the package is installed.
 
 ```json
-{ "jev": { "tiers": { "fast": "anthropic/claude-sonnet-5", "balanced": "anthropic/claude-opus-5-5", "deep": "anthropic/claude-fable-5-1" } } }
+{ "jev": { "tiers": { "fast": "claude-sonnet-5", "balanced": "claude-opus-5-5", "deep": "claude-fable-5-1" } } }
 ```
 
-`tiers` is optional (those are the defaults). It also sets `compaction.modelOverrides[<model>].reserveTokens` in
+`tiers` is optional (those are the defaults). A bare id resolves on the provider the session already
+runs on, to the newest model of that family there (`claude-opus-5-5` → `claude-bridge/claude-opus-5` on a
+bridge session); `provider/id` pins a tier to that provider exactly. It also sets `compaction.modelOverrides[<model>].reserveTokens` in
 `.pi/settings.json` to half each model's context window, so compaction runs at ~50%.
 
 ## Router
