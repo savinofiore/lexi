@@ -1,5 +1,5 @@
 {
-  "_how": "Lanes are evaluated in order: the first lane with at least one firing rule wins. A rule fires when `<check> <op> <value>` holds and none of its optional `unless` conditions (one object or a list) holds. Ops: gte, gt, lte, lt. Adding a check means adding a rule here, never touching review.py. A project adds its own checks and rules in `.lexi/review.json`: `checks` (same format as checks.json, a project check wins over a core one with the same id), `rules` (lane name → rules appended to that lane) and optional `drop_first_patterns`. The CONVENTIONS lane ships empty: it exists for those project rules. CONVENTIONS and QUALITY share exit code 1 with NITS on purpose: for CI both mean 'fix before merge, no risk outside the codebase'; the lane name tells humans which.",
+  "_how": "Lanes are evaluated in order: the first lane with at least one firing rule wins. A rule fires when `<check> <op> <value>` holds and none of its optional `unless` conditions (one object or a list) holds. Ops: gte, gt, lte, lt. Adding a check means adding a rule here, never touching review.py. A project adds its own checks and rules in `.lexi/review.json`: `checks` (same format as checks.json, a project check wins over a core one with the same id), `rules` (lane name → rules appended to that lane) and optional `drop_first_patterns`. A diff over `max_request_tokens` (Jev's ceiling, questions included) is split into parts of files, one parallel call each, and the answers merged per check (`aggregate` in checks.json); past `max_parts` the remaining files are omitted and the verdict is partial. `drop_first_patterns` rank files last, so they land in the last parts and are the first omitted. The CONVENTIONS lane ships empty: it exists for those project rules. CONVENTIONS and QUALITY share exit code 1 with NITS on purpose: for CI both mean 'fix before merge, no risk outside the codebase'; the lane name tells humans which.",
   "verdicts": [
     {
       "name": "BLOCK",
@@ -150,8 +150,11 @@
   },
   "state_limits": {
     "chars_per_token": 3,
-    "max_state_tokens": 24000,
+    "max_request_tokens": 40000,
+    "max_parts": 16,
     "drop_first_patterns": [
+      "\\.(md|rst|txt)$",
+      "^\\.(agents|claude|codex|cursor|pi|github|vscode|idea)/",
       "package-lock\\.json$",
       "yarn\\.lock$",
       "pnpm-lock\\.yaml$",

@@ -11,6 +11,7 @@ from __future__ import annotations
 import argparse
 import copy
 import json
+from concurrent.futures import ThreadPoolExecutor
 import os
 import re
 import subprocess
@@ -27,6 +28,7 @@ MAX_ATTEMPTS = 3
 RETRY_STATUSES = {429, 529}
 QUESTION_FIELDS = {"type", "instructions", "criteria"}
 OVERLAY = os.path.join(".lexi", "review.json")
+TRUNCATED = "\n[... truncated by jev-review: file over budget ...]\n"
 OPS = {"gte": (">=", lambda a, b: a >= b), "gt": (">", lambda a, b: a > b),
        "lte": ("<=", lambda a, b: a <= b), "lt": ("<", lambda a, b: a < b)}
 FILE_HEADER = re.compile(r"^diff --git a/(.+?) b/(.+)$", re.M)
@@ -84,7 +86,15 @@ def merge_overlay(checks, policy, overlay):
     unknown = sorted(checks_in_policy(policy) - set(checks))
     if unknown:  # a rule on a missing check would never fire, silently
         raise ReviewError(f"policy rules name checks that do not exist: {', '.join(unknown)}")
+    validate_patterns(checks, policy)
     return checks, policy
+
+
+def validate_patterns(checks, policy):
+    """A bad regex would otherwise surface as a traceback mid-review, only on the diffs that reach it."""
+    for cid, check in checks.items():
+        compile_patterns(check.get("escalation_patterns", []), f"{cid}.escalation_patterns")
+    compile_patterns(policy["state_limits"]["drop_first_patterns"], "drop_first_patterns")
 
 
 def load_config(root):
@@ -158,8 +168,11 @@ def split_diff(diff):
 
 # --- truncation ---------------------------------------------------------------
 
-def compile_patterns(patterns):
-    return [re.compile(pattern, re.I) for pattern in patterns]
+def compile_patterns(patterns, where="pattern"):
+    try:
+        return [re.compile(pattern, re.I) for pattern in patterns]
+    except re.error as error:
+        raise ReviewError(f"{where}: invalid regex {error.pattern!r} ({error})") from None
 
 
 def matches_any(patterns, path, content=""):
@@ -177,27 +190,40 @@ def rank(path, chunk, critical, drop_first):
     return 0 if matches_any(critical, path, chunk) else 1
 
 
-def fit_diff(files, checks, policy, overhead=0):
-    """Keeps the files that fit the budget, by priority. Returns (kept, omitted)."""
+def part_budget(policy, questions, overhead):
+    """Characters of diff per call: the request ceiling minus the questions, which every call carries."""
     limits = policy["state_limits"]
-    budget = limits["max_state_tokens"] * limits["chars_per_token"] - overhead
+    return limits["max_request_tokens"] * limits["chars_per_token"] - len(json.dumps(questions)) - overhead
+
+
+def split_parts(files, checks, policy, budget):
+    """Packs the files into parts that each fit one call, first-fit by rank: part 1 holds what the critical
+    checks care about, lockfiles and docs go last. Past `max_parts` the rest is omitted. Returns (parts, omitted)."""
+    limits = policy["state_limits"]
     critical, drop_first = critical_patterns(checks), compile_patterns(limits["drop_first_patterns"])
     ranked = sorted(enumerate(files), key=lambda item: (rank(*item[1], critical, drop_first), item[0]))
-    kept, used = {}, 0
+    parts, omitted = [], []
     for index, (path, chunk) in ranked:
-        if used + len(chunk) <= budget:
-            kept[index], used = (path, chunk), used + len(chunk)
-    if files and not kept:  # the first file alone overflows: better cut it than send an empty diff
-        index, (path, chunk) = ranked[0]
-        kept[index] = (path, chunk[:budget] + "\n[... truncated by jev-review: file over budget ...]\n")
-    omitted = [path for index, (path, _) in enumerate(files) if index not in kept]
-    return [kept[index] for index in sorted(kept)], omitted
+        if len(chunk) > budget:  # one file over budget: better cut it than never send it
+            chunk = chunk[:budget - len(TRUNCATED)] + TRUNCATED
+        part = next((p for p in parts if p["used"] + len(chunk) <= budget), None)
+        if part is None and len(parts) < limits["max_parts"]:
+            part = {"used": 0, "files": {}}
+            parts.append(part)
+        if part is None:
+            omitted.append(index)
+            continue
+        part["files"][index], part["used"] = (path, chunk), part["used"] + len(chunk)
+    return [[p["files"][i] for i in sorted(p["files"])] for p in parts], [files[i][0] for i in sorted(omitted)]
 
 
-def build_state(title, description, files, omitted):
-    changed = [path for path, _ in files] + [f"{path} [omitted: over size limit]" for path in omitted]
+def build_state(title, description, part, files, omitted):
+    """One call's state: the part's diff, but the whole file list so Jev knows the shape of the change."""
+    inside = {path for path, _ in part}
+    changed = [path if path in inside else f"{path} [in another part]" for path, _ in files if path not in omitted]
+    changed += [f"{path} [omitted: over size limit]" for path in omitted]
     return {"pr_title": title, "pr_description": description, "changed_files": changed,
-            "omitted_files": len(omitted), "diff": "".join(chunk for _, chunk in files)}
+            "omitted_files": len(omitted), "diff": "".join(chunk for _, chunk in part)}
 
 
 # --- calling Jev --------------------------------------------------------------
@@ -212,7 +238,7 @@ def describe_http_error(error):
     if error.code == 401:
         return "invalid TYPESAFE_API_KEY (HTTP 401)."
     if error.code == 400:
-        return f"Jev refused the request (HTTP 400, usually max_tokens_exceeded: lower max_state_tokens in policy.json): {detail}"
+        return f"Jev refused the request (HTTP 400, usually max_tokens_exceeded: lower max_request_tokens in policy.json): {detail}"
     if error.code == 422:
         return f"malformed request (HTTP 422), check checks.json and {OVERLAY}: {detail}"
     if error.code in RETRY_STATUSES:
@@ -236,6 +262,36 @@ def call_jev(key, state, questions):
         except urllib.error.URLError as error:
             raise ReviewError(f"network unreachable: {error.reason}") from None
     raise ReviewError("Jev did not answer.")
+
+
+def call_parts(key, states, questions):
+    """One call per part, in parallel: the parts are independent and Jev answers each in ~2 s."""
+    started = time.monotonic()
+    with ThreadPoolExecutor(max_workers=len(states)) as pool:
+        responses = list(pool.map(lambda state: call_jev(key, state, questions)[0], states))
+    return responses, int((time.monotonic() - started) * 1000)
+
+
+def merge_answers(answers_by_part, checks):
+    if len(answers_by_part) == 1:
+        return answers_by_part[0]
+    return {cid: merge_answer([a[cid] for a in answers_by_part if cid in a], checks[cid]) for cid in answers_by_part[0]}
+
+
+def merge_answer(answers, check):
+    """Across parts a noul or score keeps the highest part (`\"aggregate\": \"min\"` in the check keeps the lowest:
+    a property that must hold for the whole diff, like docs_only); a choice averages the probabilities."""
+    if answers[0]["type"] == "choice":
+        return merge_choice(answers)
+    pick = min if check.get("aggregate") == "min" else max
+    return pick(answers, key=lambda answer: answer.get("noul", answer.get("score")))
+
+
+def merge_choice(answers):
+    mean = {option: round(sum(a["probabilities"][option] for a in answers) / len(answers), 4)
+            for option in answers[0]["probabilities"]}
+    choice = max(mean, key=mean.get)
+    return {**answers[0], "choice": choice, "confidence": mean[choice], "probabilities": mean}
 
 
 # --- policy -------------------------------------------------------------------
@@ -393,7 +449,8 @@ def render(report, checks, policy, color_on):
     lines += ["", render_escalation(report, policy)]
     lines += [render_compare(report)] if report.get("compare") else []
     usage = report["usage"]
-    lines.append(paint(f"  {report['ms']} ms · {usage['input_tokens']} input tokens · ${report['cost_usd']:.5f}", "gray", color_on))
+    calls = f"{report['parts']} parallel calls · " if report["parts"] > 1 else ""
+    lines.append(paint(f"  {report['ms']} ms · {calls}{usage['input_tokens']} input tokens · ${report['cost_usd']:.5f}", "gray", color_on))
     return "\n".join(lines)
 
 
@@ -446,18 +503,20 @@ def build_report(args, checks, policy, testable):
     files = split_diff(diff)
     if not files:
         return None
-    overhead = len(title) + len(description) + sum(len(path) for path, _ in files)
-    kept, omitted = fit_diff(files, checks, policy, overhead)
-    state = {**build_state(title, description, kept, omitted), "testable_paths": testable}
-    response, ms = call_jev(read_api_key(), state, public_questions(checks))
-    answers = response["answers"]
+    questions, key = public_questions(checks), read_api_key()
+    overhead = len(title) + len(description) + sum(len(path) + 20 for path, _ in files)
+    parts, omitted = split_parts(files, checks, policy, part_budget(policy, questions, overhead))
+    states = [{**build_state(title, description, part, files, omitted), "testable_paths": testable} for part in parts]
+    responses, ms = call_parts(key, states, questions)
+    answers = merge_answers([response["answers"] for response in responses], checks)
     verdict, fired = evaluate(policy, answers)
+    kept = [file for part in parts for file in part]
     escalation = escalations(checks, policy, answers, kept)
-    tokens = response.get("usage", {}).get("input_tokens", 0)
+    tokens = sum(response.get("usage", {}).get("input_tokens", 0) for response in responses)
     report = {"title": title, "changed_files": [p for p, _ in files], "omitted_files": len(omitted), "omitted_paths": omitted,
-              "verdict": verdict["name"], "exit_code": verdict["exit_code"], "verdict_color": verdict["color"],
+              "parts": len(parts), "verdict": verdict["name"], "exit_code": verdict["exit_code"], "verdict_color": verdict["color"],
               "fired_rules": fired, **summarise(answers), "escalation": escalation, "ms": ms,
-              "model": response.get("model"), "usage": response.get("usage", {}), "answers": answers,
+              "model": responses[0].get("model"), "usage": {"input_tokens": tokens}, "answers": answers,
               "cost_usd": round(tokens * policy["pricing"]["input_usd_per_million_tokens"] / 1_000_000, 6)}
     report["handoff"] = handoff(fired, escalation, checks, kept, policy)
     if args.escalate and report["handoff"]:

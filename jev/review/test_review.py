@@ -88,13 +88,60 @@ class DiffTest(unittest.TestCase):
         diff = "diff --git a/a.py b/a.py\n+x\ndiff --git a/b.py b/b.py\n+y\n"
         self.assertEqual([p for p, _ in review.split_diff(diff)], ["a.py", "b.py"])
 
-    def test_truncation_drops_lockfile_first_and_keeps_critical(self):
-        files = [("package-lock.json", "diff --git" + "x" * 500), ("src/auth/session.py", "diff --git" + "y" * 500),
-                 ("README.md", "diff --git" + "z" * 500)]
-        policy = {**POLICY, "state_limits": {**POLICY["state_limits"], "chars_per_token": 1, "max_state_tokens": 1100}}
-        kept, omitted = review.fit_diff(files, CHECKS, policy)
-        self.assertEqual([p for p, _ in kept], ["src/auth/session.py", "README.md"])
+    def test_parts_fill_by_rank_then_omit_past_max_parts(self):
+        files = [("README.md", "diff --git" + "z" * 500), ("src/auth/session.py", "diff --git" + "y" * 500),
+                 ("package-lock.json", "diff --git" + "x" * 700), ("src/cart.py", "diff --git" + "w" * 500)]
+        policy = {**POLICY, "state_limits": {**POLICY["state_limits"], "max_parts": 2}}
+        parts, omitted = review.split_parts(files, CHECKS, policy, budget=1100)
+        self.assertEqual([[p for p, _ in part] for part in parts], [["src/auth/session.py", "src/cart.py"], ["README.md"]])
         self.assertEqual(omitted, ["package-lock.json"])
+        parts, omitted = review.split_parts(files, CHECKS, policy, budget=5000)
+        self.assertEqual(([[p for p, _ in part] for part in parts], omitted), ([[p for p, _ in files]], []))
+
+    def test_a_file_over_budget_is_cut_not_dropped(self):
+        parts, omitted = review.split_parts([("big.py", "diff --git" + "x" * 900)], CHECKS, POLICY, budget=300)
+        self.assertEqual(omitted, [])
+        self.assertEqual(len(parts[0][0][1]), 300)
+        self.assertTrue(parts[0][0][1].endswith(review.TRUNCATED))
+
+    def test_budget_pays_for_the_questions_on_every_call(self):
+        questions = review.public_questions(CHECKS)
+        budget = review.part_budget(POLICY, questions, overhead=100)
+        self.assertEqual(budget, 40000 * 3 - len(json.dumps(questions)) - 100)
+
+    def test_state_lists_every_file_and_marks_the_ones_elsewhere(self):
+        files = [("a.py", "diff --git\n+a"), ("b.py", "diff --git\n+b"), ("c.lock", "diff --git\n+c")]
+        state = review.build_state("T", "D", [files[0]], files, ["c.lock"])
+        self.assertEqual(state["changed_files"], ["a.py", "b.py [in another part]", "c.lock [omitted: over size limit]"])
+        self.assertEqual((state["diff"], state["omitted_files"]), ("diff --git\n+a", 1))
+
+    def test_invalid_regex_in_overlay_is_an_error_at_load(self):
+        overlay = {"checks": {"bad": {**OVERLAY["checks"]["layer_bypass"], "escalation_patterns": ["Provider("]}}}
+        with self.assertRaisesRegex(review.ReviewError, "bad.escalation_patterns: invalid regex 'Provider\\('"):
+            review.merge_overlay(CORE_CHECKS, CORE_POLICY, overlay)
+        with self.assertRaisesRegex(review.ReviewError, "drop_first_patterns"):
+            review.merge_overlay(CORE_CHECKS, CORE_POLICY, {"drop_first_patterns": ["("]})
+
+
+class MergeTest(unittest.TestCase):
+    def test_noul_keeps_the_worst_part_unless_aggregate_min(self):
+        parts = [{**nouls(hardcoded_secret=0.1, docs_only=0.9), "readability": {"type": "score", "score": 0.5}},
+                 {**nouls(hardcoded_secret=0.8, docs_only=0.2), "readability": {"type": "score", "score": 2.5}}]
+        merged = review.merge_answers(parts, CHECKS)
+        self.assertEqual((merged["hardcoded_secret"]["noul"], merged["docs_only"]["noul"]), (0.8, 0.2))
+        self.assertEqual(merged["readability"]["score"], 2.5)
+
+    def test_choice_averages_probabilities(self):
+        parts = [{"primary_concern": {"type": "choice", "choice": "nothing", "confidence": 0.9,
+                                      "probabilities": {"nothing": 0.9, "secret": 0.1}}},
+                 {"primary_concern": {"type": "choice", "choice": "secret", "confidence": 0.7,
+                                      "probabilities": {"nothing": 0.3, "secret": 0.7}}}]
+        merged = review.merge_answers(parts, CHECKS)["primary_concern"]
+        self.assertEqual((merged["choice"], merged["confidence"], merged["probabilities"]), ("nothing", 0.6, {"nothing": 0.6, "secret": 0.4}))
+
+    def test_one_part_passes_through(self):
+        answers = nouls(hardcoded_secret=0.1)
+        self.assertIs(review.merge_answers([answers], CHECKS), answers)
 
     def test_commit_parsing(self):
         self.assertEqual(review.parse_commits("Fix login\x1fBody here\x1e"), ("Fix login", "Body here"))
