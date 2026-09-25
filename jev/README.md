@@ -43,7 +43,7 @@ per tier, and writes a `jev` object in `.lexi.json`; without that object the ext
 the package is installed.
 
 ```json
-{ "jev": { "tiers": { "fast": "claude-sonnet-5", "balanced": "claude-opus-5-5", "deep": "claude-fable-5-1" } } }
+{ "jev": { "tiers": { "fast": "claude-sonnet-5", "balanced": "claude-opus-5-5", "deep": "claude-opus-5-5" } } }
 ```
 
 `tiers` is optional (those are the defaults). A bare id resolves on the provider the session already
@@ -53,14 +53,16 @@ bridge session); `provider/id` pins a tier to that provider exactly. It also set
 
 ## Router
 
-On the first prompt, Jev classifies the task: tier (`fast`, `balanced`, `deep`), effort (`low` … `max`) and
-risk. The choice is applied once and then held for the whole session, so the prompt cache is never thrown
+On the first prompt, Jev classifies the task: tier (`trivial`, `fast`, `balanced`, `deep`), effort (`low` … `xhigh`)
+and risk. The choice is applied once and then held for the whole session, so the prompt cache is never thrown
 away; a manual `/model` is never overridden. Going up needs confidence ≥ 0.3, going down ≥ 0.6; risk > 0.7
-forces `deep` with effort at least `high`. If Jev does not answer (1.5 s timeout, error), the next prompt asks
+forces `deep` with effort at least `xhigh`; `deep` alone runs at least `high`. If Jev does not answer (1.5 s timeout, error), the next prompt asks
 again.
 
-On Claude Code every subagent spawn (forks excepted) is classified on its own: `fast → sonnet`,
-`balanced → opus`, `deep → fable`. On Pi subagent models are pinned by the subagent extension and left alone.
+On Claude Code every subagent spawn (forks excepted) is classified on its own: `trivial → haiku`,
+`fast → sonnet`, `balanced → opus`, `deep → opus`. Opus 5.5 beats Fable 5.1 at every cost point, so `deep`
+is Opus at a higher effort. A session is never put on haiku: it holds its model to the end, so `trivial` stays
+at `fast`. On Pi subagent models are pinned by the subagent extension and left alone.
 
 You see `[jev-router] session: sonnet · effort low` in the transcript and `jev · …` in the status line.
 

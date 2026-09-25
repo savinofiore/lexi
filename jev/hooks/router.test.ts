@@ -57,6 +57,13 @@ describe('jev-router', () => {
     expect(seen.logs).toContain("[jev-router] reusing the first prompt's choice")
   })
 
+  test('never puts the session on haiku: trivial is held at sonnet', async ($, on) => {
+    const { seen } = setupWorld(on, true, () => jevReply('trivial', 0.2))
+    await $.prompt.submit(prompt('read the README'))
+    await drain($.turn.step(step(0)))
+    expect(seen.steps).toEqual([{ model: 'claude-sonnet-5', effort: 'low' }])
+  })
+
   test('leaves subagent steps alone', async ($, on) => {
     const { seen } = setupWorld(on, true, () => jevReply('fast', 0.2))
     await $.prompt.submit(prompt('rename foo'))
@@ -74,7 +81,7 @@ describe('jev-router', () => {
     await $.prompt.submit(prompt('second'))
     await drain($.turn.step(step(1)))
     expect(seen.jevCalls).toBe(2)
-    expect(seen.steps[1]).toEqual({ model: 'claude-fable-5-1', effort: 'xhigh' })
+    expect(seen.steps[1]).toEqual({ model: 'claude-opus-5-5', effort: 'xhigh' })
   })
 
   test('without a key never calls Jev and changes nothing', async ($, on) => {
@@ -93,14 +100,28 @@ describe('jev-router', () => {
     await $.agent.spawn(spawn('general-purpose'))
     await $.agent.spawn({ ...spawn('fork'), fork: true })
     expect(seen.jevCalls).toBe(2)
-    expect(seen.spawns).toEqual(['sonnet', 'fable', undefined])
+    expect(seen.spawns).toEqual(['sonnet', 'opus', undefined])
     expect(seen.logs).toContain('[jev-router] subagent Explore: sonnet')
   })
 
-  test('risk forces deep and at least high effort', async ($, on) => {
+  test('sends a trivial subagent to haiku', async ($, on) => {
+    const { seen } = setupWorld(on, true, () => jevReply('trivial', 0.1))
+    await $.agent.spawn(spawn('Explore'))
+    expect(seen.spawns).toEqual(['haiku'])
+    expect(seen.logs).toContain('[jev-router] subagent Explore: haiku')
+  })
+
+  test('deep runs on opus with at least high effort', async ($, on) => {
+    const { seen } = setupWorld(on, true, () => jevReply('deep', 0.2))
+    await $.prompt.submit(prompt('design the cache invalidation'))
+    await drain($.turn.step(step(0)))
+    expect(seen.steps[0]).toEqual({ model: 'claude-opus-5-5', effort: 'high' })
+  })
+
+  test('risk forces opus at xhigh effort', async ($, on) => {
     const { seen } = setupWorld(on, true, () => jevReply('fast', 0.1, 0.9))
     await $.prompt.submit(prompt('run the migration on prod'))
     await drain($.turn.step(step(0)))
-    expect(seen.steps[0]).toEqual({ model: 'claude-fable-5-1', effort: 'high' })
+    expect(seen.steps[0]).toEqual({ model: 'claude-opus-5-5', effort: 'xhigh' })
   })
 })
