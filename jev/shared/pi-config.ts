@@ -14,9 +14,11 @@ const readJson = <T>(path: string): T | undefined => {
   }
 }
 
-// `"jev": false` records that the user said no: only an object turns jev on.
+// `"jev": false` records that the user said no. `"jev": true` is a hand-written `{}`: accept it,
+// a silent "off" for a typo cost a whole session once.
 export const jevConfig = (cwd: string): JevConfig | undefined => {
   const jev = readJson<{ jev?: unknown }>(join(cwd, '.lexi.json'))?.jev
+  if (jev === true) return {}
   return typeof jev === 'object' && jev !== null ? (jev as JevConfig) : undefined
 }
 

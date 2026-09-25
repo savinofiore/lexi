@@ -24,12 +24,7 @@ flows.
 
 ## Install and opt in
 
-**Claude Code** — install the plugin from the lexi marketplace, then run `/lexi:init` in the project:
-
-```
-/plugin marketplace add savinofiore/lexi
-/plugin install jev@lexi
-```
+**Claude Code** — jev is a dependency of lexi (since 0.4.0): installing `lexi@lexi` installs it. Older installs: `/plugin install jev@lexi`. Then run `/lexi:init` in the project.
 
 `init` asks whether to enable Jev and, on yes, writes `"jev": {}` in `.lexi.json` (the review step) and, in the
 project's `.claude/settings.json`, `CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1` (the hooks module stays off without it)
