@@ -95,7 +95,8 @@ answers merged per check: the worst part wins, except checks marked `"aggregate"
 checks feed (BLOCK first: tests, secret-looking files), then the rest; lockfiles, generated code, docs and agent
 tooling (`drop_first_patterns`) go last. Past `max_parts` (32) the rest is omitted, the JSON says so
 (`omitted_files`, `suspended_checks`) and the rules on `higher_is_better` checks (`adds_tests`,
-`description_matches`) are suspended: absence is not provable on a partial diff. From an agent: `/jev:code-review` (Claude Code; `/code-review` and `/review` too in a project `init` set up) or
+`description_matches`) are suspended: absence is not provable on a partial diff. Every merged number remembers
+the part that produced it: the handoff's `files` for that check come from that part only. From an agent: `/jev:code-review` (Claude Code; `/code-review` and `/review` too in a project `init` set up) or
 `/skill:jev-code-review` (Pi).
 
 | File | Holds |
