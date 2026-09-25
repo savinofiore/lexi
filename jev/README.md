@@ -91,9 +91,11 @@ Exit codes: 0 MERGE, 1 NITS/CONVENTIONS/QUALITY ("fix before merge, no risk outs
 REVIEW, 3 BLOCK, 4 error. A diff over Jev's request ceiling (`max_request_tokens` in `policy.json`, ~40K tokens
 with the questions) is split into parts of whole files, one parallel call each (~2 s, ~$0.002 a call), and the
 answers merged per check: the worst part wins, except checks marked `"aggregate": "min"` (`docs_only`,
-`outside_test_perimeter`) that must hold for every part. Part 1 holds the files the critical checks care about;
-lockfiles, generated code, docs and agent tooling (`drop_first_patterns`) go last. Past `max_parts` (16) the rest
-is omitted and the JSON says so (`omitted_files`): that verdict is partial. From an agent: `/jev:code-review` (Claude Code; `/code-review` and `/review` too in a project `init` set up) or
+`outside_test_perimeter`) that must hold for every part. Files are ordered by the most severe lane their critical
+checks feed (BLOCK first: tests, secret-looking files), then the rest; lockfiles, generated code, docs and agent
+tooling (`drop_first_patterns`) go last. Past `max_parts` (32) the rest is omitted, the JSON says so
+(`omitted_files`, `suspended_checks`) and the rules on `higher_is_better` checks (`adds_tests`,
+`description_matches`) are suspended: absence is not provable on a partial diff. From an agent: `/jev:code-review` (Claude Code; `/code-review` and `/review` too in a project `init` set up) or
 `/skill:jev-code-review` (Pi).
 
 | File | Holds |

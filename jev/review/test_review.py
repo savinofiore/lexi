@@ -42,6 +42,11 @@ class PolicyTest(unittest.TestCase):
         verdict, _ = review.evaluate(POLICY, nouls(adds_tests=0.05, docs_only=0.1))
         self.assertEqual(verdict["name"], "NITS")
 
+    def test_suspended_checks_do_not_fire_but_still_cancel_as_unless(self):
+        answers = nouls(adds_tests=0.05, docs_only=0.1, debug_leftovers=0.9)
+        verdict, fired = review.evaluate(POLICY, answers, suspended=["adds_tests", "docs_only"])
+        self.assertEqual((verdict["name"], [f["check"] for f in fired]), ("NITS", ["debug_leftovers"]))
+
     def test_missing_answer_never_fires(self):
         verdict, _ = review.evaluate(POLICY, {})
         self.assertEqual(verdict["name"], "MERGE")
@@ -97,6 +102,14 @@ class DiffTest(unittest.TestCase):
         self.assertEqual(omitted, ["package-lock.json"])
         parts, omitted = review.split_parts(files, CHECKS, policy, budget=5000)
         self.assertEqual(([[p for p, _ in part] for part in parts], omitted), ([[p for p, _ in files]], []))
+
+    def test_block_lane_files_come_first_so_tests_never_land_in_the_omitted_tail(self):
+        files = [("lib/a.py", "diff --git" + "a" * 500), ("lib/b.py", "diff --git" + "b" * 500),
+                 ("src/auth/session.py", "diff --git" + "s" * 500), ("test/a_test.py", "diff --git" + "t" * 500)]
+        policy = {**POLICY, "state_limits": {**POLICY["state_limits"], "max_parts": 2}}
+        parts, omitted = review.split_parts(files, CHECKS, policy, budget=600)
+        self.assertEqual([[p for p, _ in part] for part in parts], [["test/a_test.py"], ["src/auth/session.py"]])
+        self.assertEqual(omitted, ["lib/a.py", "lib/b.py"])
 
     def test_a_file_over_budget_is_cut_not_dropped(self):
         parts, omitted = review.split_parts([("big.py", "diff --git" + "x" * 900)], CHECKS, POLICY, budget=300)
