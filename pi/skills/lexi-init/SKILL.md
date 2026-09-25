@@ -139,9 +139,9 @@ answer, do not skip it:
 > after the last GREEN)? It calls TypeSafe's API with `TYPESAFE_API_KEY`.
 
 No → write `"jev": false` in `.lexi.json` (so an update run does not ask again), move to step 7. Yes → the key must be exported in the shell
-Pi starts from (`export TYPESAFE_API_KEY=...`), or sit under `env` in
-`~/.claude/settings.json` as a fallback. Name it if missing; never ask for the
-key in chat. Then ask:
+Pi starts from (`export TYPESAFE_API_KEY=...` in `~/.zshrc`). Under `env` in
+`~/.claude/settings.json` only the router and compaction find it; the review
+needs the export. Name it if missing; never ask for the key in chat. Then ask:
 
 1. **Which model per tier?** The router moves between three tiers: `fast`
    (mechanical work), `balanced` (ordinary engineering), `deep` (hard or

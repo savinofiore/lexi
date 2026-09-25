@@ -16,8 +16,10 @@ flows.
 
 ## Requirements
 
-- `TYPESAFE_API_KEY`: under `env` in `~/.claude/settings.json`, or exported in the shell. Pi reads the shell
-  first and falls back to `~/.claude/settings.json`. Never put it in a project settings file that is committed.
+- `TYPESAFE_API_KEY`: Claude Code reads it under `env` in `~/.claude/settings.json` (or the shell). Pi needs it
+  exported in the shell it starts from (`~/.zshrc`): the router and compaction fall back to
+  `~/.claude/settings.json`, the review does not and exits 4. Both runtimes on one machine: set it in both
+  places. Never put it in a project settings file that is committed.
   Without it every level stays off and says so once.
 - Python 3 for the review (standard library only; lexi already needs it).
 - Claude Code ≥ 2.1.276 for the router and compaction hooks.

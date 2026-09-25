@@ -173,12 +173,20 @@ From a local clone, for development (edits to `pi/` and `jev/` live immediately)
 pi install /absolute/path/to/lexi
 ```
 
-**2. Jev key** (only if you will enable Jev) — export it in the shell Pi starts from; Pi has no `env` block,
-so as a fallback it reads `env.TYPESAFE_API_KEY` from `~/.claude/settings.json`:
+**2. Jev key** (only if you will enable Jev) — export it in the shell Pi starts from (`~/.zshrc`), then restart
+Pi. Pi has no `env` block: the router and compaction fall back to `env.TYPESAFE_API_KEY` in
+`~/.claude/settings.json`, but the code review (`review.py`) reads only the shell, so without the export it
+exits 4. Using both runtimes on one machine, keep the same key in both places:
 
 ```bash
-export TYPESAFE_API_KEY=...
+export TYPESAFE_API_KEY=...          # ~/.zshrc: Pi (router, compaction, review)
 ```
+
+```json
+{ "env": { "TYPESAFE_API_KEY": "..." } }
+```
+
+The JSON goes in `~/.claude/settings.json` for Claude Code, which passes it to every hook and script.
 
 **3. Opt the project in** — Pi loads project files only in an approved folder (accept the prompt once, or
 `pi -a` for one run), then:

@@ -7,14 +7,14 @@
   },
   "metadata": {
     "description": "Test-first workflow for coding agents, plus a Jev decision layer (model router, verbatim compaction, code review). lexi requires ponytail, caveman and jev.",
-    "version": "0.5.0"
+    "version": "0.5.1"
   },
   "plugins": [
     {
       "name": "lexi",
       "source": "./",
       "description": "Test-first flow without the spec ceremony. A PreToolUse hook keeps source edits behind a mirror test and protects existing assertions; /lexi:lexi drives one vertical slice at a time, red to green, calling /lexi:tdd for test quality and /lexi:grill for an open scope. Requires ponytail, caveman and jev, installed automatically; Jev stays off in a project until /lexi:init turns it on. Run /lexi:init once per project.",
-      "version": "0.5.0",
+      "version": "0.5.1",
       "author": {
         "name": "Savino Fiore"
       },
@@ -33,7 +33,7 @@
       "name": "jev",
       "source": "./jev",
       "description": "Three-level decision layer on TypeSafe's Jev: picks model and effort per session and per subagent, compacts context without rewriting it, and gates code review with calibrated closed questions whose verdict is computed in code. Pairs with lexi: the review runs after the last GREEN. Needs TYPESAFE_API_KEY and Claude Code >= 2.1.276.",
-      "version": "0.1.1",
+      "version": "0.1.2",
       "author": {
         "name": "Savino Fiore"
       },
