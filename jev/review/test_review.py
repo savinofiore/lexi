@@ -152,6 +152,16 @@ class MergeTest(unittest.TestCase):
         merged = review.merge_answers(parts, CHECKS)["primary_concern"]
         self.assertEqual((merged["choice"], merged["confidence"], merged["probabilities"]), ("nothing", 0.6, {"nothing": 0.6, "secret": 0.4}))
 
+    def test_handoff_files_come_from_the_part_that_produced_the_number(self):
+        parts = [[("src/a_provider.ts", "diff --git\n+a")], [("src/b_provider.ts", "diff --git\n+b")]]
+        answers = review.merge_answers([nouls(layer_bypass=0.2), nouls(layer_bypass=0.9)], CHECKS)
+        self.assertEqual(answers["layer_bypass"]["part"], 1)
+        _, fired = review.evaluate(POLICY, answers)
+        files = parts[0] + parts[1]
+        item = review.handoff(fired, [], CHECKS, files, POLICY, parts)[0]
+        self.assertEqual((item["part"], item["files"]), (1, ["src/b_provider.ts"]))
+        self.assertEqual(review.handoff(fired, [], CHECKS, files, POLICY)[0]["files"], ["src/a_provider.ts", "src/b_provider.ts"])
+
     def test_one_part_passes_through(self):
         answers = nouls(hardcoded_secret=0.1)
         self.assertIs(review.merge_answers([answers], CHECKS), answers)
