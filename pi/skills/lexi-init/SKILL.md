@@ -105,7 +105,44 @@ Run exactly the command given in the task, once. Do not edit files. Report:
 
 Add `"gate_agent": true` to `.lexi.json`.
 
-## 6. Verify before declaring done
+## 6. Jev — mandatory question, optional feature
+
+STOP. Ask the user this exact question and wait for a reply — do not infer an
+answer, do not skip it:
+
+> Enable Jev in this project (model router, verbatim compaction, code review
+> after the last GREEN)? It calls TypeSafe's API with `TYPESAFE_API_KEY`.
+
+No → no `jev` key, move to step 7. Yes → the key must be exported in the shell
+Pi starts from (`export TYPESAFE_API_KEY=...`), or sit under `env` in
+`~/.claude/settings.json` as a fallback. Name it if missing; never ask for the
+key in chat. Then ask:
+
+1. **Which model per tier?** The router moves between three tiers: `fast`
+   (mechanical work), `balanced` (ordinary engineering), `deep` (hard or
+   high-stakes). Run `pi --list-models`, show the table, propose one model per
+   tier, let the user confirm or change. Defaults if the user keeps them:
+   `anthropic/claude-sonnet-5`, `anthropic/claude-opus-5-5`,
+   `anthropic/claude-fable-5-1`.
+
+Write, merging into existing files and never overwriting other keys:
+
+- `.lexi.json` → `"jev": { "tiers": { "fast": "<provider/id>", "balanced": "<provider/id>", "deep": "<provider/id>" } }`
+  (omit `tiers` if the user kept the defaults). The `jev` key is what turns on
+  the router and compaction extensions and the review step of the flows.
+- `.pi/settings.json` → `compaction.modelOverrides`: for each tier model, set
+  `reserveTokens` to half its context window from the `pi --list-models` table,
+  so compaction runs at ~50% and Jev prunes while the context is still cheap
+  to rewrite:
+
+  ```json
+  { "compaction": { "modelOverrides": { "anthropic/claude-opus-5-5": { "reserveTokens": 500000 } } } }
+  ```
+
+Say that the project's own conventions can be added to the review later in
+`.lexi/review.json` (see the jev README) — do not write that file now.
+
+## 7. Verify before declaring done
 
 1. Run the gate command once. It has to pass, or the starting state is already
    broken and the user needs to know that first.
@@ -117,4 +154,5 @@ Add `"gate_agent": true` to `.lexi.json`.
    it one file at a time as the code gets touched.
 
 Report the gate command, the `testable` list, what you deliberately left out,
-that count, and — if set — the model running the gate subagent.
+that count, and — if set — the model running the gate subagent and the Jev
+tiers.

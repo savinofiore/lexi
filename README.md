@@ -4,6 +4,8 @@ Test-first workflow for coding agents: analyze task, propose unit tests, confirm
 
 Ships for two agent runtimes: **Claude Code** (plugin) and **Pi** (`@earendil-works/pi-coding-agent`, pi package). Same skills, same guard, same flow — different install path and invocation syntax per runtime.
 
+Optional companion: **[jev](jev/README.md)**, a decision layer on TypeSafe's Jev that picks model and effort per session, compacts context without rewriting it, and reviews the diff after the last GREEN with a verdict computed in code. Separate plugin on Claude Code (`jev@lexi`), opt-in per project on Pi; `init` asks.
+
 ## What it does
 
 Three paths from the router skill:
@@ -174,6 +176,7 @@ Pi has no `/lexi:` namespace or Skill-tool convention — each skill is its own 
 | `/lexi:feature <description>` | `/skill:lexi-feature <description>` |
 | `/lexi:grill <description>` | `/skill:lexi-grill <description>` |
 | `/lexi:tdd` | `/skill:lexi-tdd` |
+| `/jev:code-review` | `/skill:jev-code-review` |
 
 The guard itself needs no invocation on either runtime — it runs on every edit/write once `.lexi.json` exists.
 
@@ -204,6 +207,15 @@ named in `.pi/agents/lexi-gate.md` next to it:
 Absent (default) — the gate runs inline, in the driving model's own context,
 exactly as before. Claude Code has no subagent equivalent and ignores this key.
 
+**`jev`**: set by `init` when the user enables Jev. Its presence turns on the
+review step after the last GREEN (both runtimes) and, on Pi, the router and
+compaction extensions. See [jev/README.md](jev/README.md) for `tiers` and the
+project conventions file `.lexi/review.json`.
+
+```json
+{ "gate": "npx vitest run", "jev": {}, "...": "..." }
+```
+
 ## Commands
 
 Claude Code syntax shown; see [Invocation on Pi](#invocation-on-pi) for the Pi equivalent of each.
@@ -216,6 +228,7 @@ Claude Code syntax shown; see [Invocation on Pi](#invocation-on-pi) for the Pi e
 | `/lexi:feature <description>` | Feature with clear scope |
 | `/lexi:grill <description>` | Feature with open scope (optional, feature can call it) |
 | `/lexi:tdd` | Reference material for test quality |
+| `/jev:code-review` | Jev review of the working tree, a ref, a PR or a diff (jev plugin; the flows call it on their own) |
 
 The guard runs on every `Edit`/`Write` (Claude Code) or `edit`/`write` tool call (Pi) once `.lexi.json` exists. No invocation needed.
 
@@ -434,14 +447,17 @@ Vitest line is co-located: `tests` equal to `source` maps `src/cart/total.ts` �
 python3 hooks/tdd_guard_test.py
 ```
 
+jev's own checks are listed in [jev/README.md](jev/README.md#development).
+
 Repo layout:
 
 ```
 hooks/            guard script + its own tests (source of truth for both runtimes)
 skills/           Claude Code skills (init, lexi, bug, feature, grill, tdd)
 .claude-plugin/   Claude Code plugin + marketplace manifests
-pi/extensions/    Pi extension wrapping hooks/tdd_guard.py
-pi/skills/        Pi skills (lexi-init, lexi-lexi, lexi-bug, lexi-feature, lexi-grill, lexi-tdd)
+pi/extensions/    Pi extensions: the guard (wraps hooks/tdd_guard.py), jev-router, jev-compact
+pi/skills/        Pi skills (lexi-init, lexi-lexi, lexi-bug, lexi-feature, lexi-grill, lexi-tdd, jev-code-review)
+jev/              jev Claude Code plugin; shared/ and review/ are imported by the Pi side too
 package.json      Pi package manifest (`pi.extensions`, `pi.skills`)
 ```
 

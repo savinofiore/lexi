@@ -67,7 +67,35 @@ too — set `tests` equal to `source` and `test_suffix` to `.test.ts`, giving
 Then create `.lexi/` containing an empty `allow` file, and add `.lexi/allow` to
 `.gitignore` — it is per-task scratch, not shared state.
 
-## 5. Verify before declaring done
+## 5. Jev — mandatory question, optional feature
+
+STOP. Ask the user this exact question and wait for a reply — do not infer an
+answer, do not skip it:
+
+> Enable Jev in this project (model router, verbatim compaction, code review
+> after the last GREEN)? It calls TypeSafe's API with `TYPESAFE_API_KEY`.
+
+No → no `jev` key, move to step 6. Yes → check the prerequisites and name any
+that is missing; the user fixes them, you never ask for the key in chat:
+
+- the jev plugin: `/plugin install jev@lexi` (same marketplace as lexi);
+- Claude Code ≥ 2.1.276 (`claude --version`);
+- `TYPESAFE_API_KEY` under `env` in `~/.claude/settings.json` or exported in
+  the shell — never in a project settings file that is committed.
+
+Then write, merging into existing files and never overwriting other keys:
+
+- `.lexi.json` → `"jev": {}` — turns on the review step of the bug and
+  feature flows;
+- `.claude/settings.json` → under `env`: `"CLAUDE_CODE_ENABLE_FUNCTION_HOOKS": "1"`
+  (the plugin's hooks module stays off without it) and
+  `"CLAUDE_AUTOCOMPACT_PCT_OVERRIDE": "50"` (compaction runs earlier, so Jev
+  prunes while the context is still cheap to rewrite).
+
+Say that the project's own conventions can be added to the review later in
+`.lexi/review.json` (see the jev README) — do not write that file now.
+
+## 6. Verify before declaring done
 
 1. Run the gate command once. It has to pass, or the starting state is already
    broken and the user needs to know that first.
@@ -79,4 +107,6 @@ Then create `.lexi/` containing an empty `allow` file, and add `.lexi/allow` to
    it one file at a time as the code gets touched.
 
 Report the gate command, the `testable` list, what you deliberately left out,
-and that count.
+that count, and whether Jev is on (with any missing prerequisite). With Jev on,
+the router confirms itself on the first prompt of the next session:
+`[jev-router] session: …`.
