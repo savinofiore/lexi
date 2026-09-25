@@ -1,0 +1,188 @@
+{
+  "_how": "Lanes are evaluated in order: the first lane with at least one firing rule wins. A rule fires when `<check> <op> <value>` holds and none of its optional `unless` conditions (one object or a list) holds. Ops: gte, gt, lte, lt. Adding a check means adding a rule here, never touching review.py. A project adds its own checks and rules in `.lexi/review.json`: `checks` (same format as checks.json, a project check wins over a core one with the same id), `rules` (lane name → rules appended to that lane) and optional `drop_first_patterns`. The CONVENTIONS lane ships empty: it exists for those project rules. CONVENTIONS and QUALITY share exit code 1 with NITS on purpose: for CI both mean 'fix before merge, no risk outside the codebase'; the lane name tells humans which.",
+  "verdicts": [
+    {
+      "name": "BLOCK",
+      "exit_code": 3,
+      "color": "red",
+      "rules": [
+        {
+          "check": "hardcoded_secret",
+          "op": "gte",
+          "value": 0.7
+        },
+        {
+          "check": "injection_risk",
+          "op": "gte",
+          "value": 0.7
+        },
+        {
+          "check": "weakens_tests",
+          "op": "gte",
+          "value": 0.8
+        }
+      ]
+    },
+    {
+      "name": "SECURITY REVIEW",
+      "exit_code": 2,
+      "color": "yellow",
+      "rules": [
+        {
+          "check": "breaks_api",
+          "op": "gte",
+          "value": 0.6
+        },
+        {
+          "check": "data_migration",
+          "op": "gte",
+          "value": 0.6
+        },
+        {
+          "check": "touches_auth",
+          "op": "gte",
+          "value": 0.8
+        }
+      ]
+    },
+    {
+      "name": "CONVENTIONS",
+      "exit_code": 1,
+      "color": "cyan",
+      "rules": []
+    },
+    {
+      "name": "QUALITY",
+      "exit_code": 1,
+      "color": "magenta",
+      "rules": [
+        {
+          "check": "async_hazard",
+          "op": "gte",
+          "value": 0.7
+        },
+        {
+          "check": "mixed_responsibility",
+          "op": "gte",
+          "value": 0.7
+        },
+        {
+          "check": "duplicated_logic",
+          "op": "gte",
+          "value": 0.7
+        },
+        {
+          "check": "over_engineering",
+          "op": "gte",
+          "value": 0.7
+        },
+        {
+          "check": "deep_nesting",
+          "op": "gte",
+          "value": 0.7
+        },
+        {
+          "check": "long_function",
+          "op": "gte",
+          "value": 0.7
+        },
+        {
+          "check": "too_many_params",
+          "op": "gte",
+          "value": 0.7
+        },
+        {
+          "check": "unclear_naming",
+          "op": "gte",
+          "value": 0.7
+        },
+        {
+          "check": "readability",
+          "op": "gte",
+          "value": 2.0
+        }
+      ]
+    },
+    {
+      "name": "NITS",
+      "exit_code": 1,
+      "color": "yellow_dim",
+      "rules": [
+        {
+          "check": "description_matches",
+          "op": "lte",
+          "value": 0.4
+        },
+        {
+          "check": "debug_leftovers",
+          "op": "gte",
+          "value": 0.7
+        },
+        {
+          "check": "adds_tests",
+          "op": "lte",
+          "value": 0.2,
+          "unless": [
+            {
+              "check": "docs_only",
+              "op": "gte",
+              "value": 0.5
+            },
+            {
+              "check": "outside_test_perimeter",
+              "op": "gte",
+              "value": 0.5
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "MERGE",
+      "exit_code": 0,
+      "color": "green",
+      "rules": []
+    }
+  ],
+  "uncertainty_band": {
+    "low": 0.35,
+    "high": 0.65
+  },
+  "state_limits": {
+    "chars_per_token": 3,
+    "max_state_tokens": 24000,
+    "drop_first_patterns": [
+      "package-lock\\.json$",
+      "yarn\\.lock$",
+      "pnpm-lock\\.yaml$",
+      "pubspec\\.lock$",
+      "Podfile\\.lock$",
+      "Gemfile\\.lock$",
+      "poetry\\.lock$",
+      "Cargo\\.lock$",
+      "go\\.sum$",
+      "composer\\.lock$",
+      "\\.g\\.dart$",
+      "\\.freezed\\.dart$",
+      "\\.pb\\.",
+      "\\.min\\.(js|css)$",
+      "\\.snap$",
+      "(^|/)(dist|build|generated|vendor|node_modules)/",
+      "\\.(png|jpe?g|gif|svg|webp|ico|pdf|ttf|otf|woff2?|mp4|mp3|zip|lottie)$"
+    ]
+  },
+  "handoff": {
+    "fired_rules": "locate",
+    "uncertain": "verify",
+    "delegated": "delegate"
+  },
+  "compare_min_delta": 0.1,
+  "pricing": {
+    "input_usd_per_million_tokens": 0.042,
+    "output_usd_per_million_tokens": 0
+  },
+  "bar_colors": {
+    "red_from": 0.7,
+    "yellow_from": 0.35
+  }
+}

@@ -1,6 +1,6 @@
 ---
 name: lexi-init
-description: Set up lexi in a project — detect the stack, find the real gate command, choose the testable whitelist, and write .lexi.json plus .lexi/. Run once per project after installing the plugin. Use when the user says "lexi init", "set up lexi", or the guard reports it is dormant.
+description: Set up lexi in a project — detect the stack, find the real gate command, choose the testable whitelist, and write .lexi.json plus .lexi/. Run once per project after installing the plugin, and again after updating lexi: on an existing .lexi.json it only asks what the new version added. Use when the user says "lexi init", "set up lexi", or the guard reports it is dormant.
 ---
 
 > **Pi:** invoke this skill with `/skill:lexi-init`.
@@ -11,6 +11,20 @@ description: Set up lexi in a project — detect the stack, find the real gate c
 The plugin ships the flow and the guard. This writes the project side:
 `.lexi.json`, the only file the guard reads. Without it the guard is dormant and
 the flow has no gate to run.
+
+## 0. Already set up? Update, do not redo
+
+`.lexi.json` exists → this is an update run, not a fresh setup. Show the current
+`gate`, `source`, `tests`, `test_suffix`, `testable` and `gate_agent`, and keep
+them: do not re-detect or rewrite them, and do not re-ask the gate subagent
+question, unless the user asks to. Skip steps 1–5 and ask only the questions
+this version added whose answer is missing:
+
+- no `jev` key → step 6 (Jev). `"jev": false` means the user already said no —
+  do not ask again unless they bring it up.
+
+Then step 7. Nothing missing → say the project is up to date and run step 7
+only.
 
 ## 1. Detect the stack
 
@@ -105,7 +119,44 @@ Run exactly the command given in the task, once. Do not edit files. Report:
 
 Add `"gate_agent": true` to `.lexi.json`.
 
-## 6. Verify before declaring done
+## 6. Jev — mandatory question, optional feature
+
+STOP. Ask the user this exact question and wait for a reply — do not infer an
+answer, do not skip it:
+
+> Enable Jev in this project (model router, verbatim compaction, code review
+> after the last GREEN)? It calls TypeSafe's API with `TYPESAFE_API_KEY`.
+
+No → write `"jev": false` in `.lexi.json` (so an update run does not ask again), move to step 7. Yes → the key must be exported in the shell
+Pi starts from (`export TYPESAFE_API_KEY=...`), or sit under `env` in
+`~/.claude/settings.json` as a fallback. Name it if missing; never ask for the
+key in chat. Then ask:
+
+1. **Which model per tier?** The router moves between three tiers: `fast`
+   (mechanical work), `balanced` (ordinary engineering), `deep` (hard or
+   high-stakes). Run `pi --list-models`, show the table, propose one model per
+   tier, let the user confirm or change. Defaults if the user keeps them:
+   `anthropic/claude-sonnet-5`, `anthropic/claude-opus-5-5`,
+   `anthropic/claude-fable-5-1`.
+
+Write, merging into existing files and never overwriting other keys:
+
+- `.lexi.json` → `"jev": { "tiers": { "fast": "<provider/id>", "balanced": "<provider/id>", "deep": "<provider/id>" } }`
+  (omit `tiers` if the user kept the defaults). The `jev` key is what turns on
+  the router and compaction extensions and the review step of the flows.
+- `.pi/settings.json` → `compaction.modelOverrides`: for each tier model, set
+  `reserveTokens` to half its context window from the `pi --list-models` table,
+  so compaction runs at ~50% and Jev prunes while the context is still cheap
+  to rewrite:
+
+  ```json
+  { "compaction": { "modelOverrides": { "anthropic/claude-opus-5-5": { "reserveTokens": 500000 } } } }
+  ```
+
+Say that the project's own conventions can be added to the review later in
+`.lexi/review.json` (see the jev README) — do not write that file now.
+
+## 7. Verify before declaring done
 
 1. Run the gate command once. It has to pass, or the starting state is already
    broken and the user needs to know that first.
@@ -117,4 +168,5 @@ Add `"gate_agent": true` to `.lexi.json`.
    it one file at a time as the code gets touched.
 
 Report the gate command, the `testable` list, what you deliberately left out,
-that count, and — if set — the model running the gate subagent.
+that count, and — if set — the model running the gate subagent and the Jev
+tiers.
