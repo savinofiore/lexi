@@ -1,7 +1,7 @@
 {
   "name": "jev",
   "description": "Three-level decision layer on TypeSafe's Jev: picks model and effort per session and per subagent, compacts context without rewriting it, and gates code review with calibrated closed questions. Pairs with lexi: the review runs after the last GREEN.",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "author": { "name": "Savino Fiore" },
   "homepage": "https://github.com/savinofiore/lexi",
   "repository": "https://github.com/savinofiore/lexi",

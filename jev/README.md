@@ -88,7 +88,12 @@ python3 jev/review/review.py ... --compare before.json        # after a fix: per
 ```
 
 Exit codes: 0 MERGE, 1 NITS/CONVENTIONS/QUALITY ("fix before merge, no risk outside the codebase"), 2 SECURITY
-REVIEW, 3 BLOCK, 4 error. From an agent: `/jev:code-review` (Claude Code; `/code-review` and `/review` too in a project `init` set up) or
+REVIEW, 3 BLOCK, 4 error. A diff over Jev's request ceiling (`max_request_tokens` in `policy.json`, ~40K tokens
+with the questions) is split into parts of whole files, one parallel call each (~2 s, ~$0.002 a call), and the
+answers merged per check: the worst part wins, except checks marked `"aggregate": "min"` (`docs_only`,
+`outside_test_perimeter`) that must hold for every part. Part 1 holds the files the critical checks care about;
+lockfiles, generated code, docs and agent tooling (`drop_first_patterns`) go last. Past `max_parts` (16) the rest
+is omitted and the JSON says so (`omitted_files`): that verdict is partial. From an agent: `/jev:code-review` (Claude Code; `/code-review` and `/review` too in a project `init` set up) or
 `/skill:jev-code-review` (Pi).
 
 | File | Holds |
@@ -128,8 +133,9 @@ The CONVENTIONS lane ships empty. A project fills it:
 ```
 
 `checks` uses the `checks.json` format; a project check with a core id overrides it for that project. `rules`
-maps a lane name to rules appended to it. An unknown lane, or a rule on a check that does not exist, is an
-error (exit 4), never a silent no-op. `escalate_to: "agent:<name>"` on a critical check hands it to that agent.
+maps a lane name to rules appended to it. An unknown lane, a rule on a check that does not exist or an invalid
+regex in `escalation_patterns` or `drop_first_patterns` is an error (exit 4), never a silent no-op.
+`escalate_to: "agent:<name>"` on a critical check hands it to that agent.
 
 ### Correcting a judgement
 
