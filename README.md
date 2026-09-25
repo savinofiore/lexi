@@ -4,7 +4,7 @@ Test-first workflow for coding agents: analyze task, propose unit tests, confirm
 
 Ships for two agent runtimes: **Claude Code** (plugin) and **Pi** (`@earendil-works/pi-coding-agent`, pi package). Same skills, same guard, same flow — different install path and invocation syntax per runtime.
 
-Optional companion: **[jev](jev/README.md)**, a decision layer on TypeSafe's Jev that picks model and effort per session, compacts context without rewriting it, and reviews the diff after the last GREEN with a verdict computed in code. Separate plugin on Claude Code (`jev@lexi`), opt-in per project on Pi; `init` asks.
+Companion: **[jev](jev/README.md)**, a decision layer on TypeSafe's Jev that picks model and effort per session, compacts context without rewriting it, and reviews the diff after the last GREEN with a verdict computed in code. Installed with lexi on Claude Code (`jev@lexi`, a dependency since 0.4.0) and shipped inside the Pi package; off in a project until `init` turns it on.
 
 ## What it does
 
@@ -83,8 +83,7 @@ seven come in the one lexi package, named `lexi-*` and `jev-code-review`.
 /plugin marketplace add JuliusBrussee/caveman     # and caveman from here
 
 /plugin marketplace add savinofiore/lexi
-/plugin install lexi@lexi
-/plugin install jev@lexi        # optional
+/plugin install lexi@lexi       # installs ponytail, caveman and jev too
 ```
 
 From a shell, outside Claude:
@@ -92,7 +91,6 @@ From a shell, outside Claude:
 ```bash
 claude plugin marketplace add savinofiore/lexi
 claude plugin install lexi@lexi
-claude plugin install jev@lexi   # optional
 ```
 
 **2. Jev key** (only with jev) — in `~/.claude/settings.json`, never in a committed project file:
@@ -130,7 +128,6 @@ Local (edits to `hooks/`, `skills/` and `jev/` live immediately):
 ```
 /plugin marketplace add /absolute/path/to/lexi
 /plugin install lexi@lexi
-/plugin install jev@lexi
 ```
 
 For one session only, without touching your installed plugins:
@@ -147,7 +144,6 @@ Back to GitHub:
 /plugin marketplace remove lexi
 /plugin marketplace add savinofiore/lexi
 /plugin install lexi@lexi
-/plugin install jev@lexi
 ```
 
 ## Install — Pi
@@ -225,8 +221,7 @@ and every new step stays off until the project opts in (the Jev review runs only
 
 ```
 /plugin marketplace update lexi
-/plugin update lexi@lexi
-/plugin install jev@lexi          # new in 0.2.0, only if you want Jev
+/plugin update lexi@lexi          # since 0.4.0 this also installs jev
 ```
 
 **Pi**

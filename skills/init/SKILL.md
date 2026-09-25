@@ -93,7 +93,8 @@ answer, do not skip it:
 No → write `"jev": false` in `.lexi.json` (so an update run does not ask again), move to step 6. Yes → check the prerequisites and name any
 that is missing; the user fixes them, you never ask for the key in chat:
 
-- the jev plugin: `/plugin install jev@lexi` (same marketplace as lexi);
+- the jev plugin: installed with lexi since 0.4.0; if `/jev:code-review` is not
+  in the skill list, `/plugin update lexi@lexi` or `/plugin install jev@lexi`;
 - Claude Code ≥ 2.1.276 (`claude --version`);
 - `TYPESAFE_API_KEY` under `env` in `~/.claude/settings.json` or exported in
   the shell — never in a project settings file that is committed.
