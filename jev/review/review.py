@@ -179,15 +179,25 @@ def matches_any(patterns, path, content=""):
     return any(pattern.search(path) or (content and pattern.search(content)) for pattern in patterns)
 
 
-def critical_patterns(checks):
-    return compile_patterns(p for check in checks.values() if check.get("critical") for p in check["escalation_patterns"])
+def lane_of(policy):
+    """check id → index of the most severe lane with a rule on it (0 = BLOCK)."""
+    return {rule["check"]: index for index, lane in reversed(list(enumerate(policy["verdicts"]))) for rule in lane["rules"]}
 
 
-def rank(path, chunk, critical, drop_first):
-    """0 = relevant to a critical check, 1 = normal, 2 = lockfile/generated/asset (dropped first)."""
+def critical_patterns(checks, policy):
+    """[(severity, patterns)] per critical check; a critical check outside the policy (a pure trigger) ranks
+    just above a normal file."""
+    lanes, trigger = lane_of(policy), len(policy["verdicts"]) - 1
+    return [(lanes.get(cid, trigger), compile_patterns(check["escalation_patterns"]))
+            for cid, check in checks.items() if check.get("critical")]
+
+
+def rank(path, chunk, critical, drop_first, normal):
+    """Severity of the most severe critical check the file feeds (0 = BLOCK: secrets, weakened tests...),
+    then normal files, then lockfiles/generated/docs (dropped first)."""
     if matches_any(drop_first, path):
-        return 2
-    return 0 if matches_any(critical, path, chunk) else 1
+        return normal + 1
+    return min((severity for severity, patterns in critical if matches_any(patterns, path, chunk)), default=normal)
 
 
 def part_budget(policy, questions, overhead):
@@ -199,9 +209,9 @@ def part_budget(policy, questions, overhead):
 def split_parts(files, checks, policy, budget):
     """Packs the files into parts that each fit one call, first-fit by rank: part 1 holds what the critical
     checks care about, lockfiles and docs go last. Past `max_parts` the rest is omitted. Returns (parts, omitted)."""
-    limits = policy["state_limits"]
-    critical, drop_first = critical_patterns(checks), compile_patterns(limits["drop_first_patterns"])
-    ranked = sorted(enumerate(files), key=lambda item: (rank(*item[1], critical, drop_first), item[0]))
+    limits, normal = policy["state_limits"], len(policy["verdicts"])
+    critical, drop_first = critical_patterns(checks, policy), compile_patterns(limits["drop_first_patterns"])
+    ranked = sorted(enumerate(files), key=lambda item: (rank(*item[1], critical, drop_first, normal), item[0]))
     parts, omitted = [], []
     for index, (path, chunk) in ranked:
         if len(chunk) > budget:  # one file over budget: better cut it than never send it
@@ -318,11 +328,13 @@ def describe(rule, answers):
     return f"{rule['check']} {numeric(answers, rule['check']):.2f} {OPS[rule['op']][0]} {rule['value']}"
 
 
-def evaluate(policy, answers):
-    """Lanes in order: the first with a firing rule wins; the last is the default."""
+def evaluate(policy, answers, suspended=()):
+    """Lanes in order: the first with a firing rule wins; the last is the default. Rules on `suspended`
+    checks never fire: on a partial diff the absence of something (tests, a matching description) is not provable."""
     fired = [{"lane": lane["name"], "check": rule["check"], "op": rule["op"], "threshold": rule["value"],
               "value": numeric(answers, rule["check"]), "comparison": describe(rule, answers)}
-             for lane in policy["verdicts"] for rule in lane["rules"] if holds(rule, answers)]
+             for lane in policy["verdicts"] for rule in lane["rules"]
+             if rule["check"] not in suspended and holds(rule, answers)]
     lanes_hit = {entry["lane"] for entry in fired}
     winner = next((lane for lane in policy["verdicts"] if lane["name"] in lanes_hit), policy["verdicts"][-1])
     return winner, fired
@@ -433,6 +445,8 @@ def render(report, checks, policy, color_on):
     if report["omitted_files"]:
         lines.append(paint(f" WARNING: diff truncated, {report['omitted_files']} files omitted: "
                            f"{', '.join(report['omitted_paths'])} ", "warn", color_on))
+        lines.append(paint(f" rules on {', '.join(report['suspended_checks'])} suspended: absence is not provable "
+                           "on a partial diff ", "warn", color_on))
     lines += [paint(report["title"], "bold", color_on), paint("  " + ", ".join(report["changed_files"]), "gray", color_on), ""]
     used = checks_in_policy(policy)
     nouls = [cid for cid, c in checks.items() if c["type"] == "noul"]
@@ -509,12 +523,14 @@ def build_report(args, checks, policy, testable):
     states = [{**build_state(title, description, part, files, omitted), "testable_paths": testable} for part in parts]
     responses, ms = call_parts(key, states, questions)
     answers = merge_answers([response["answers"] for response in responses], checks)
-    verdict, fired = evaluate(policy, answers)
+    ruled = lane_of(policy)
+    suspended = sorted(cid for cid, check in checks.items() if check.get("higher_is_better") and cid in ruled) if omitted else []
+    verdict, fired = evaluate(policy, answers, suspended)
     kept = [file for part in parts for file in part]
     escalation = escalations(checks, policy, answers, kept)
     tokens = sum(response.get("usage", {}).get("input_tokens", 0) for response in responses)
     report = {"title": title, "changed_files": [p for p, _ in files], "omitted_files": len(omitted), "omitted_paths": omitted,
-              "parts": len(parts), "verdict": verdict["name"], "exit_code": verdict["exit_code"], "verdict_color": verdict["color"],
+              "parts": len(parts), "suspended_checks": suspended, "verdict": verdict["name"], "exit_code": verdict["exit_code"], "verdict_color": verdict["color"],
               "fired_rules": fired, **summarise(answers), "escalation": escalation, "ms": ms,
               "model": responses[0].get("model"), "usage": {"input_tokens": tokens}, "answers": answers,
               "cost_usd": round(tokens * policy["pricing"]["input_usd_per_million_tokens"] / 1_000_000, 6)}
