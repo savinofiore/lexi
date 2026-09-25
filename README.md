@@ -507,6 +507,12 @@ python3 skills_frontmatter_test.py   # every SKILL.md: valid frontmatter, name =
 
 jev's own checks are listed in [jev/README.md](jev/README.md#development).
 
+**Releasing**: Claude Code caches a plugin by its version, so a change that does not bump it never reaches
+users who already have that version (Pi follows git commits and is not affected). Every merged change to lexi
+bumps `version` in `.claude-plugin/plugin.json`, the `lexi` entry and `metadata` of
+`.claude-plugin/marketplace.json`, and `package.json`; a change to jev bumps `jev/.claude-plugin/plugin.json`
+and the `jev` entry of the marketplace.
+
 Repo layout:
 
 ```
