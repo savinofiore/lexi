@@ -5,6 +5,8 @@ description: Set up lexi in a project — detect the stack, find the real gate c
 
 > **Pi:** invoke this skill with `/skill:lexi-init`.
 
+**Loading this skill is the request.** Do not wait for a task — start at step 0
+now, in the project the session is running in.
 
 # init — opt this project into lexi
 
