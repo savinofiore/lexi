@@ -3,9 +3,10 @@ name: lexi-init
 description: Set up lexi in a project — detect the stack, find the real gate command, choose the testable whitelist, and write .lexi.json plus .lexi/. Run once per project after installing the plugin, and again after updating lexi — on an existing .lexi.json it only asks what the new version added. Use when the user says "lexi init", "set up lexi", or the guard reports it is dormant.
 ---
 
-> **Pi:** invoke this skill with `/skill:lexi-init`.
+> **Pi:** invoke this skill with `/lexi-init` — a bare `/skill:lexi-init` carries
+> no request and the model only waits for a task.
 
-**Loading this skill is the request.** Do not wait for a task — start at step 0
+**Loading this skill is the request.** Do not wait for a task — start with the required packages
 now, in the project the session is running in.
 
 # init — opt this project into lexi
@@ -13,6 +14,14 @@ now, in the project the session is running in.
 The plugin ships the flow and the guard. This writes the project side:
 `.lexi.json`, the only file the guard reads. Without it the guard is dormant and
 the flow has no gate to run.
+
+## Required packages — every run, fresh or update
+
+lexi needs ponytail and caveman. Pi cannot install one package from another, so
+check `pi list` (or `packages` in `.pi/settings.json`) for
+`git:github.com/DietrichGebert/ponytail` and `git:github.com/JuliusBrussee/caveman`.
+Install whichever is missing with `pi install -l <source>`, then tell the user to
+run `/reload`.
 
 ## 0. Already set up? Update, do not redo
 
