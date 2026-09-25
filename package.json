@@ -1,6 +1,6 @@
 {
   "name": "lexi",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Test-first workflow and write guard for coding agents, with an optional Jev decision layer.",
   "license": "MIT",
   "keywords": [

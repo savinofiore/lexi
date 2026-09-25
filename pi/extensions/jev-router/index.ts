@@ -18,14 +18,17 @@ import {
   TIMEOUT_MS,
 } from '../../../jev/shared/router-policy.ts'
 import { jevApiKey, jevConfig } from '../../../jev/shared/pi-config.ts'
+import { resolveTarget } from './models.ts'
 
 // Thresholds, questions and decision live in jev/shared/router-policy.ts, shared with the Claude
 // Code hook: here lives only what is Pi's, which models exist and how to switch them mid-session.
-// `.lexi.json` → `jev.tiers` overrides any tier with a `provider/model-id`.
+// `.lexi.json` → `jev.tiers` overrides any tier with a `provider/model-id` (exact) or a bare model id,
+// which stays on the session's provider: the defaults must never move a claude-bridge session onto
+// the metered `anthropic` provider.
 const DEFAULT_TIERS: Record<Tier, string> = {
-  fast: 'anthropic/claude-sonnet-5',
-  balanced: 'anthropic/claude-opus-5-5',
-  deep: 'anthropic/claude-fable-5-1',
+  fast: 'claude-sonnet-5',
+  balanced: 'claude-opus-5-5',
+  deep: 'claude-fable-5-1',
 }
 const STATUS_KEY = 'jev-router'
 
@@ -57,7 +60,7 @@ async function apply(pi: ExtensionAPI, ctx: ExtensionContext, answer: Answer, ti
   const forced = isRisky(answer)
   const tierRank = targetTierRank(answer)
   const effortRank = targetEffortRank(answer)
-  const configuredRank = TIERS.findIndex((tier) => tiers[tier] === fromModel)
+  const configuredRank = TIERS.findIndex((tier) => tiers[tier] === fromModel || tiers[tier] === ctx.model?.id)
   const fromRank = configuredRank >= 0 ? configuredRank : tierRankOfModel(fromModel)
   const target = isMoveAllowed(fromRank, tierRank, answer.tierConfidence, forced) ? tiers[TIERS[tierRank] ?? 'deep'] : undefined
   const effort = isMoveAllowed(effortRankOf(fromEffort), effortRank, answer.effortConfidence, forced) ? EFFORTS[effortRank] : undefined
@@ -67,13 +70,11 @@ async function apply(pi: ExtensionAPI, ctx: ExtensionContext, answer: Answer, ti
 }
 
 async function switchModel(pi: ExtensionAPI, ctx: ExtensionContext, target: string): Promise<string | undefined> {
-  const [provider = '', ...rest] = target.split('/')
-  const found = ctx.modelRegistry.find(provider, rest.join('/'))
+  const found = resolveTarget(ctx.modelRegistry.getAll(), ctx.model?.provider, target)
   if (!found) return warn(ctx, `model ${target} not in the registry: staying on the current one`)
   const ok = await pi.setModel(found)
-  return ok ? shortModel(target) : warn(ctx, `${target} has no authentication configured: staying on the current one`)
+  return ok ? shortModel(found.id) : warn(ctx, `${target} has no authentication configured: staying on the current one`)
 }
-
 type Applied = { fromModel: string; fromEffort: string; model?: string; effort?: string }
 
 function report(ctx: ExtensionContext, answer: Answer, { fromModel, fromEffort, model, effort }: Applied): void {
