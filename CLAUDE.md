@@ -10,3 +10,4 @@ commit/PR touching shipped files (`skills/`, `hooks/`, `pi/`, `jev/`, `.claude-p
   `.claude-plugin/marketplace.json` both `metadata.version` and the `lexi` plugin entry.
 - jev change → bump `jev/.claude-plugin/plugin.json` and the `jev` entry in the marketplace.
 - Patch for fixes, minor for features. All lexi version fields must match.
+- Run `python3 versions_test.py` before committing: it fails if the copies disagree.
