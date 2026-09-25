@@ -21,7 +21,9 @@ the questions this version added whose answer is missing:
 - no `jev` key → step 5 (Jev). `"jev": false` means the user already said no —
   do not ask again unless they bring it up;
 - `jev` is an object but `.claude/skills/code-review/` or
-  `.claude/skills/review/` is missing → write the missing shim (step 5).
+  `.claude/skills/review/` is missing → write the missing shim (step 5);
+- `.claude/settings.json` lacks any of the step 4 marketplaces, or one has
+  `autoUpdate` other than `true` → merge it in (step 4, team install).
 
 Then step 6. Nothing missing → say the project is up to date and run step 6
 only.
@@ -81,6 +83,26 @@ too — set `tests` equal to `source` and `test_suffix` to `.test.ts`, giving
 
 Then create `.lexi/` containing an empty `allow` file, and add `.lexi/allow` to
 `.gitignore` — it is per-task scratch, not shared state.
+
+**Team install.** Merge into `.claude/settings.json`, keeping every other key:
+
+```json
+{
+  "extraKnownMarketplaces": {
+    "lexi": { "source": { "source": "github", "repo": "savinofiore/lexi" }, "autoUpdate": true },
+    "ponytail": { "source": { "source": "github", "repo": "DietrichGebert/ponytail" }, "autoUpdate": true },
+    "caveman": { "source": { "source": "github", "repo": "JuliusBrussee/caveman" }, "autoUpdate": true }
+  },
+  "enabledPlugins": { "lexi@lexi": true }
+}
+```
+
+Committed, this is what reaches the rest of the team: a teammate who trusts the
+folder is offered the marketplaces and lexi, and `autoUpdate` keeps lexi and
+every dependency it adds current. Third-party marketplaces do not auto-update
+by default, so without it each teammate stays on the version they first
+installed. An existing entry for one of these marketplaces keeps its `source`;
+only set `autoUpdate` to `true`.
 
 ## 5. Jev — mandatory question, optional feature
 
