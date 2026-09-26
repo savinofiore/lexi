@@ -35,7 +35,7 @@ $REVIEW <source> --json > "$SCRATCH/jev-1.json"
 
 Exit 4 with `TYPESAFE_API_KEY not set` → explain where it goes (shell, or `env` in `~/.claude/settings.json`)
 and stop; never ask for the key in chat. Other exit 4 (bad `.lexi/review.json`, network) → quote the error and
-stop. `Empty diff` → say so and stop. `omitted_files > 0` → say it first: the verdict is on a partial diff.
+stop. `Empty diff` → say so and stop. `omitted_files > 0` → say it first: the verdict is on a partial diff, with the rules on `suspended_checks` not applied.
 
 ## 2. Report the verdict without rewriting it
 

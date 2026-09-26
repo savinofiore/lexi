@@ -1,7 +1,7 @@
 {
   "name": "lexi",
   "description": "Test-first workflow for coding agents, without the spec ceremony. A PreToolUse hook keeps source edits behind a mirror test and protects existing assertions; the flow drives one vertical slice at a time, red to green, through the project's own gate. Ships its own tdd and grill skills; requires ponytail for the implementation step, caveman for terse output and jev for routing, compaction and review.",
-  "version": "0.5.1",
+  "version": "0.6.0",
   "author": {
     "name": "Savino Fiore"
   },

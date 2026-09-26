@@ -147,7 +147,8 @@ needs the export. Name it if missing; never ask for the key in chat. Then ask:
    (mechanical work), `balanced` (ordinary engineering), `deep` (hard or
    high-stakes). Run `pi --list-models`, show the table, propose one model per
    tier, let the user confirm or change. Defaults if the user keeps them:
-   `claude-sonnet-5`, `claude-opus-5-5`, `claude-fable-5-1`, resolved on the
+   `claude-sonnet-5`, `claude-opus-5-5`, `claude-opus-5-5` (`deep` is Opus at
+   a higher effort), resolved on the
    provider the session already runs on (a `claude-bridge` session stays on
    the bridge). Propose the same: bare ids unless the user wants a tier on
    another provider.

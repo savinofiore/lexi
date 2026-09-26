@@ -43,7 +43,7 @@ per tier, and writes a `jev` object in `.lexi.json`; without that object the ext
 the package is installed.
 
 ```json
-{ "jev": { "tiers": { "fast": "claude-sonnet-5", "balanced": "claude-opus-5-5", "deep": "claude-fable-5-1" } } }
+{ "jev": { "tiers": { "fast": "claude-sonnet-5", "balanced": "claude-opus-5-5", "deep": "claude-opus-5-5" } } }
 ```
 
 `tiers` is optional (those are the defaults). A bare id resolves on the provider the session already
@@ -53,14 +53,16 @@ bridge session); `provider/id` pins a tier to that provider exactly. It also set
 
 ## Router
 
-On the first prompt, Jev classifies the task: tier (`fast`, `balanced`, `deep`), effort (`low` … `max`) and
-risk. The choice is applied once and then held for the whole session, so the prompt cache is never thrown
+On the first prompt, Jev classifies the task: tier (`trivial`, `fast`, `balanced`, `deep`), effort (`low` … `xhigh`)
+and risk. The choice is applied once and then held for the whole session, so the prompt cache is never thrown
 away; a manual `/model` is never overridden. Going up needs confidence ≥ 0.3, going down ≥ 0.6; risk > 0.7
-forces `deep` with effort at least `high`. If Jev does not answer (1.5 s timeout, error), the next prompt asks
+forces `deep` with effort at least `xhigh`; `deep` alone runs at least `high`. If Jev does not answer (1.5 s timeout, error), the next prompt asks
 again.
 
-On Claude Code every subagent spawn (forks excepted) is classified on its own: `fast → sonnet`,
-`balanced → opus`, `deep → fable`. On Pi subagent models are pinned by the subagent extension and left alone.
+On Claude Code every subagent spawn (forks excepted) is classified on its own: `trivial → haiku`,
+`fast → sonnet`, `balanced → opus`, `deep → opus`. Opus 5.5 beats Fable 5.1 at every cost point, so `deep`
+is Opus at a higher effort. A session is never put on haiku: it holds its model to the end, so `trivial` stays
+at `fast`. On Pi subagent models are pinned by the subagent extension and left alone.
 
 You see `[jev-router] session: sonnet · effort low` in the transcript and `jev · …` in the status line.
 
@@ -91,9 +93,12 @@ Exit codes: 0 MERGE, 1 NITS/CONVENTIONS/QUALITY ("fix before merge, no risk outs
 REVIEW, 3 BLOCK, 4 error. A diff over Jev's request ceiling (`max_request_tokens` in `policy.json`, ~40K tokens
 with the questions) is split into parts of whole files, one parallel call each (~2 s, ~$0.002 a call), and the
 answers merged per check: the worst part wins, except checks marked `"aggregate": "min"` (`docs_only`,
-`outside_test_perimeter`) that must hold for every part. Part 1 holds the files the critical checks care about;
-lockfiles, generated code, docs and agent tooling (`drop_first_patterns`) go last. Past `max_parts` (16) the rest
-is omitted and the JSON says so (`omitted_files`): that verdict is partial. From an agent: `/jev:code-review` (Claude Code; `/code-review` and `/review` too in a project `init` set up) or
+`outside_test_perimeter`) that must hold for every part. Files are ordered by the most severe lane their critical
+checks feed (BLOCK first: tests, secret-looking files), then the rest; lockfiles, generated code, docs and agent
+tooling (`drop_first_patterns`) go last. Past `max_parts` (32) the rest is omitted, the JSON says so
+(`omitted_files`, `suspended_checks`) and the rules on `higher_is_better` checks (`adds_tests`,
+`description_matches`) are suspended: absence is not provable on a partial diff. Every merged number remembers
+the part that produced it: the handoff's `files` for that check come from that part only. From an agent: `/jev:code-review` (Claude Code; `/code-review` and `/review` too in a project `init` set up) or
 `/skill:jev-code-review` (Pi).
 
 | File | Holds |

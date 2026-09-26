@@ -11,6 +11,7 @@ import {
   JEV_URL,
   parseAnswer,
   QUESTIONS,
+  sessionTierRank,
   shortModel,
   targetEffortRank,
   targetTierRank,
@@ -21,7 +22,7 @@ import {
 
 // Claude Code side only: thresholds and questions live in shared/router-policy.ts, shared with Pi.
 const SHOW_STATUS = true
-const MODEL_ID: Record<string, string> = { sonnet: 'claude-sonnet-5', opus: 'claude-opus-5-5', fable: 'claude-fable-5-1' }
+const MODEL_ID: Record<string, string> = { sonnet: 'claude-sonnet-5', opus: 'claude-opus-5-5' }
 const DEBUG = { to: 'debug' } as const
 
 type HookArgs<N extends EventName> = Parameters<Hook<N>>
@@ -85,7 +86,7 @@ export async function onAgentSpawn($: EngineInterface, e: HookArgs<'agent.spawn'
 }
 
 function startSessionPlan($: EngineInterface, answer: Answer, model: string, effort: unknown): Plan {
-  const tierRank = targetTierRank(answer)
+  const tierRank = sessionTierRank(answer)
   const effortRank = targetEffortRank(answer)
   const moveModel = isMoveAllowed(tierRankOfModel(model), tierRank, answer.tierConfidence, isRisky(answer))
   const moveEffort = isMoveAllowed(effortRankOf(effort), effortRank, answer.effortConfidence, isRisky(answer))

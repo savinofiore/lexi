@@ -179,15 +179,25 @@ def matches_any(patterns, path, content=""):
     return any(pattern.search(path) or (content and pattern.search(content)) for pattern in patterns)
 
 
-def critical_patterns(checks):
-    return compile_patterns(p for check in checks.values() if check.get("critical") for p in check["escalation_patterns"])
+def lane_of(policy):
+    """check id → index of the most severe lane with a rule on it (0 = BLOCK)."""
+    return {rule["check"]: index for index, lane in reversed(list(enumerate(policy["verdicts"]))) for rule in lane["rules"]}
 
 
-def rank(path, chunk, critical, drop_first):
-    """0 = relevant to a critical check, 1 = normal, 2 = lockfile/generated/asset (dropped first)."""
+def critical_patterns(checks, policy):
+    """[(severity, patterns)] per critical check; a critical check outside the policy (a pure trigger) ranks
+    just above a normal file."""
+    lanes, trigger = lane_of(policy), len(policy["verdicts"]) - 1
+    return [(lanes.get(cid, trigger), compile_patterns(check["escalation_patterns"]))
+            for cid, check in checks.items() if check.get("critical")]
+
+
+def rank(path, chunk, critical, drop_first, normal):
+    """Severity of the most severe critical check the file feeds (0 = BLOCK: secrets, weakened tests...),
+    then normal files, then lockfiles/generated/docs (dropped first)."""
     if matches_any(drop_first, path):
-        return 2
-    return 0 if matches_any(critical, path, chunk) else 1
+        return normal + 1
+    return min((severity for severity, patterns in critical if matches_any(patterns, path, chunk)), default=normal)
 
 
 def part_budget(policy, questions, overhead):
@@ -199,9 +209,9 @@ def part_budget(policy, questions, overhead):
 def split_parts(files, checks, policy, budget):
     """Packs the files into parts that each fit one call, first-fit by rank: part 1 holds what the critical
     checks care about, lockfiles and docs go last. Past `max_parts` the rest is omitted. Returns (parts, omitted)."""
-    limits = policy["state_limits"]
-    critical, drop_first = critical_patterns(checks), compile_patterns(limits["drop_first_patterns"])
-    ranked = sorted(enumerate(files), key=lambda item: (rank(*item[1], critical, drop_first), item[0]))
+    limits, normal = policy["state_limits"], len(policy["verdicts"])
+    critical, drop_first = critical_patterns(checks, policy), compile_patterns(limits["drop_first_patterns"])
+    ranked = sorted(enumerate(files), key=lambda item: (rank(*item[1], critical, drop_first, normal), item[0]))
     parts, omitted = [], []
     for index, (path, chunk) in ranked:
         if len(chunk) > budget:  # one file over budget: better cut it than never send it
@@ -284,7 +294,8 @@ def merge_answer(answers, check):
     if answers[0]["type"] == "choice":
         return merge_choice(answers)
     pick = min if check.get("aggregate") == "min" else max
-    return pick(answers, key=lambda answer: answer.get("noul", answer.get("score")))
+    index, answer = pick(enumerate(answers), key=lambda item: item[1].get("noul", item[1].get("score")))
+    return {**answer, "part": index}  # the part that produced the number: the handoff looks only there
 
 
 def merge_choice(answers):
@@ -318,11 +329,14 @@ def describe(rule, answers):
     return f"{rule['check']} {numeric(answers, rule['check']):.2f} {OPS[rule['op']][0]} {rule['value']}"
 
 
-def evaluate(policy, answers):
-    """Lanes in order: the first with a firing rule wins; the last is the default."""
+def evaluate(policy, answers, suspended=()):
+    """Lanes in order: the first with a firing rule wins; the last is the default. Rules on `suspended`
+    checks never fire: on a partial diff the absence of something (tests, a matching description) is not provable."""
     fired = [{"lane": lane["name"], "check": rule["check"], "op": rule["op"], "threshold": rule["value"],
-              "value": numeric(answers, rule["check"]), "comparison": describe(rule, answers)}
-             for lane in policy["verdicts"] for rule in lane["rules"] if holds(rule, answers)]
+              "value": numeric(answers, rule["check"]), "comparison": describe(rule, answers),
+              "part": answers.get(rule["check"], {}).get("part")}
+             for lane in policy["verdicts"] for rule in lane["rules"]
+             if rule["check"] not in suspended and holds(rule, answers)]
     lanes_hit = {entry["lane"] for entry in fired}
     winner = next((lane for lane in policy["verdicts"] if lane["name"] in lanes_hit), policy["verdicts"][-1])
     return winner, fired
@@ -338,9 +352,11 @@ def question_text(check):
     return instructions["question"] if isinstance(instructions, dict) else str(instructions)
 
 
-def files_for(check, files):
-    hits = [path for path, chunk in files if matches_any(compile_patterns(check["escalation_patterns"]), path, chunk)]
-    return hits or [path for path, _ in files]
+def files_for(check, files, parts=None, part=None):
+    """Files the check points at: those matching its patterns, inside the part that produced its number."""
+    scope = parts[part] if parts and part is not None else files
+    hits = [path for path, chunk in scope if matches_any(compile_patterns(check["escalation_patterns"]), path, chunk)]
+    return hits or [path for path, _ in scope]
 
 
 def needs_escalation(check, value, band):
@@ -353,19 +369,19 @@ def needs_escalation(check, value, band):
     return band["low"] <= value <= band["high"]
 
 
-def escalations(checks, policy, answers, files):
+def escalations(checks, policy, answers, files, parts=None):
     band = policy["uncertainty_band"]
-    return [{"check": cid, "value": answers[cid]["noul"], "question": question_text(check),
-             "files": files_for(check, files), "escalate_to": check.get("escalate_to")}
+    return [{"check": cid, "value": answers[cid]["noul"], "question": question_text(check), "part": answers[cid].get("part"),
+             "files": files_for(check, files, parts, answers[cid].get("part")), "escalate_to": check.get("escalate_to")}
             for cid, check in checks.items() if needs_escalation(check, answers.get(cid, {}).get("noul"), band)]
 
 
-def handoff(fired, escalation, checks, files, policy):
+def handoff(fired, escalation, checks, files, policy, parts=None):
     """The handoff to the coding agent: every fired rule gets located, every uncertainty verified,
     every trigger delegated. The labels (`locate`/`verify`/`delegate`) come from policy.json."""
     asks = policy["handoff"]
-    located = [{"check": f["check"], "value": f["value"], "lane": f["lane"], "ask": asks["fired_rules"],
-                "question": question_text(checks[f["check"]]), "files": files_for(checks[f["check"]], files),
+    located = [{"check": f["check"], "value": f["value"], "lane": f["lane"], "ask": asks["fired_rules"], "part": f.get("part"),
+                "question": question_text(checks[f["check"]]), "files": files_for(checks[f["check"]], files, parts, f.get("part")),
                 "escalate_to": checks[f["check"]].get("escalate_to")} for f in fired]
     verified = [{**item, "ask": asks["delegated"] if item.get("escalate_to") else asks["uncertain"]} for item in escalation]
     return located + verified
@@ -433,6 +449,8 @@ def render(report, checks, policy, color_on):
     if report["omitted_files"]:
         lines.append(paint(f" WARNING: diff truncated, {report['omitted_files']} files omitted: "
                            f"{', '.join(report['omitted_paths'])} ", "warn", color_on))
+        lines.append(paint(f" rules on {', '.join(report['suspended_checks'])} suspended: absence is not provable "
+                           "on a partial diff ", "warn", color_on))
     lines += [paint(report["title"], "bold", color_on), paint("  " + ", ".join(report["changed_files"]), "gray", color_on), ""]
     used = checks_in_policy(policy)
     nouls = [cid for cid, c in checks.items() if c["type"] == "noul"]
@@ -509,16 +527,18 @@ def build_report(args, checks, policy, testable):
     states = [{**build_state(title, description, part, files, omitted), "testable_paths": testable} for part in parts]
     responses, ms = call_parts(key, states, questions)
     answers = merge_answers([response["answers"] for response in responses], checks)
-    verdict, fired = evaluate(policy, answers)
+    ruled = lane_of(policy)
+    suspended = sorted(cid for cid, check in checks.items() if check.get("higher_is_better") and cid in ruled) if omitted else []
+    verdict, fired = evaluate(policy, answers, suspended)
     kept = [file for part in parts for file in part]
-    escalation = escalations(checks, policy, answers, kept)
+    escalation = escalations(checks, policy, answers, kept, parts)
     tokens = sum(response.get("usage", {}).get("input_tokens", 0) for response in responses)
     report = {"title": title, "changed_files": [p for p, _ in files], "omitted_files": len(omitted), "omitted_paths": omitted,
-              "parts": len(parts), "verdict": verdict["name"], "exit_code": verdict["exit_code"], "verdict_color": verdict["color"],
+              "parts": len(parts), "suspended_checks": suspended, "verdict": verdict["name"], "exit_code": verdict["exit_code"], "verdict_color": verdict["color"],
               "fired_rules": fired, **summarise(answers), "escalation": escalation, "ms": ms,
               "model": responses[0].get("model"), "usage": {"input_tokens": tokens}, "answers": answers,
               "cost_usd": round(tokens * policy["pricing"]["input_usd_per_million_tokens"] / 1_000_000, 6)}
-    report["handoff"] = handoff(fired, escalation, checks, kept, policy)
+    report["handoff"] = handoff(fired, escalation, checks, kept, policy, parts)
     if args.escalate and report["handoff"]:
         report["handoff_prompt"] = handoff_prompt(title, verdict["name"], report["handoff"], policy["uncertainty_band"])
     if args.compare:

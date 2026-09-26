@@ -1,5 +1,5 @@
 import type { ExtensionAPI, ExtensionContext } from '@earendil-works/pi-coding-agent'
-import type { Answer, Tier } from '../../../jev/shared/router-policy.ts'
+import type { Answer, SessionTier, Tier } from '../../../jev/shared/router-policy.ts'
 import {
   causeOf,
   EFFORTS,
@@ -10,9 +10,9 @@ import {
   JEV_URL,
   parseAnswer,
   QUESTIONS,
+  sessionTierRank,
   shortModel,
   targetEffortRank,
-  targetTierRank,
   TIERS,
   tierRankOfModel,
   TIMEOUT_MS,
@@ -25,10 +25,10 @@ import { resolveTarget } from './models.ts'
 // `.lexi.json` → `jev.tiers` overrides any tier with a `provider/model-id` (exact) or a bare model id,
 // which stays on the session's provider: the defaults must never move a claude-bridge session onto
 // the metered `anthropic` provider.
-const DEFAULT_TIERS: Record<Tier, string> = {
+const DEFAULT_TIERS: Record<SessionTier, string> = {
   fast: 'claude-sonnet-5',
   balanced: 'claude-opus-5-5',
-  deep: 'claude-fable-5-1',
+  deep: 'claude-opus-5-5',
 }
 const STATUS_KEY = 'jev-router'
 
@@ -54,11 +54,11 @@ export default function (pi: ExtensionAPI) {
   })
 }
 
-async function apply(pi: ExtensionAPI, ctx: ExtensionContext, answer: Answer, tiers: Record<Tier, string>): Promise<void> {
+async function apply(pi: ExtensionAPI, ctx: ExtensionContext, answer: Answer, tiers: Partial<Record<Tier, string>>): Promise<void> {
   const fromModel = ctx.model ? `${ctx.model.provider}/${ctx.model.id}` : ''
   const fromEffort = pi.getThinkingLevel()
   const forced = isRisky(answer)
-  const tierRank = targetTierRank(answer)
+  const tierRank = sessionTierRank(answer)
   const effortRank = targetEffortRank(answer)
   const configuredRank = TIERS.findIndex((tier) => tiers[tier] === fromModel || tiers[tier] === ctx.model?.id)
   const fromRank = configuredRank >= 0 ? configuredRank : tierRankOfModel(fromModel)

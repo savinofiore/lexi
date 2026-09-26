@@ -42,6 +42,11 @@ class PolicyTest(unittest.TestCase):
         verdict, _ = review.evaluate(POLICY, nouls(adds_tests=0.05, docs_only=0.1))
         self.assertEqual(verdict["name"], "NITS")
 
+    def test_suspended_checks_do_not_fire_but_still_cancel_as_unless(self):
+        answers = nouls(adds_tests=0.05, docs_only=0.1, debug_leftovers=0.9)
+        verdict, fired = review.evaluate(POLICY, answers, suspended=["adds_tests", "docs_only"])
+        self.assertEqual((verdict["name"], [f["check"] for f in fired]), ("NITS", ["debug_leftovers"]))
+
     def test_missing_answer_never_fires(self):
         verdict, _ = review.evaluate(POLICY, {})
         self.assertEqual(verdict["name"], "MERGE")
@@ -98,6 +103,14 @@ class DiffTest(unittest.TestCase):
         parts, omitted = review.split_parts(files, CHECKS, policy, budget=5000)
         self.assertEqual(([[p for p, _ in part] for part in parts], omitted), ([[p for p, _ in files]], []))
 
+    def test_block_lane_files_come_first_so_tests_never_land_in_the_omitted_tail(self):
+        files = [("lib/a.py", "diff --git" + "a" * 500), ("lib/b.py", "diff --git" + "b" * 500),
+                 ("src/auth/session.py", "diff --git" + "s" * 500), ("test/a_test.py", "diff --git" + "t" * 500)]
+        policy = {**POLICY, "state_limits": {**POLICY["state_limits"], "max_parts": 2}}
+        parts, omitted = review.split_parts(files, CHECKS, policy, budget=600)
+        self.assertEqual([[p for p, _ in part] for part in parts], [["test/a_test.py"], ["src/auth/session.py"]])
+        self.assertEqual(omitted, ["lib/a.py", "lib/b.py"])
+
     def test_a_file_over_budget_is_cut_not_dropped(self):
         parts, omitted = review.split_parts([("big.py", "diff --git" + "x" * 900)], CHECKS, POLICY, budget=300)
         self.assertEqual(omitted, [])
@@ -138,6 +151,16 @@ class MergeTest(unittest.TestCase):
                                       "probabilities": {"nothing": 0.3, "secret": 0.7}}}]
         merged = review.merge_answers(parts, CHECKS)["primary_concern"]
         self.assertEqual((merged["choice"], merged["confidence"], merged["probabilities"]), ("nothing", 0.6, {"nothing": 0.6, "secret": 0.4}))
+
+    def test_handoff_files_come_from_the_part_that_produced_the_number(self):
+        parts = [[("src/a_provider.ts", "diff --git\n+a")], [("src/b_provider.ts", "diff --git\n+b")]]
+        answers = review.merge_answers([nouls(layer_bypass=0.2), nouls(layer_bypass=0.9)], CHECKS)
+        self.assertEqual(answers["layer_bypass"]["part"], 1)
+        _, fired = review.evaluate(POLICY, answers)
+        files = parts[0] + parts[1]
+        item = review.handoff(fired, [], CHECKS, files, POLICY, parts)[0]
+        self.assertEqual((item["part"], item["files"]), (1, ["src/b_provider.ts"]))
+        self.assertEqual(review.handoff(fired, [], CHECKS, files, POLICY)[0]["files"], ["src/a_provider.ts", "src/b_provider.ts"])
 
     def test_one_part_passes_through(self):
         answers = nouls(hardcoded_secret=0.1)
