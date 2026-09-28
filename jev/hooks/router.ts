@@ -22,7 +22,7 @@ import {
 
 // Claude Code side only: thresholds and questions live in shared/router-policy.ts, shared with Pi.
 const SHOW_STATUS = true
-const MODEL_ID: Record<string, string> = { sonnet: 'claude-sonnet-5', opus: 'claude-opus-5-5' }
+const MODEL_ID: Record<string, string> = { sonnet: 'claude-sonnet-5-5', opus: 'claude-opus-5-5' }
 const DEBUG = { to: 'debug' } as const
 
 type HookArgs<N extends EventName> = Parameters<Hook<N>>

@@ -43,7 +43,7 @@ per tier, and writes a `jev` object in `.lexi.json`; without that object the ext
 the package is installed.
 
 ```json
-{ "jev": { "tiers": { "fast": "claude-sonnet-5", "balanced": "claude-opus-5-5", "deep": "claude-opus-5-5" } } }
+{ "jev": { "tiers": { "fast": "claude-sonnet-5-5", "balanced": "claude-opus-5-5", "deep": "claude-opus-5-5" } } }
 ```
 
 `tiers` is optional (those are the defaults). A bare id resolves on the provider the session already
@@ -56,7 +56,8 @@ bridge session); `provider/id` pins a tier to that provider exactly. It also set
 On the first prompt, Jev classifies the task: tier (`trivial`, `fast`, `balanced`, `deep`), effort (`low` … `xhigh`)
 and risk. The choice is applied once and then held for the whole session, so the prompt cache is never thrown
 away; a manual `/model` is never overridden. Going up needs confidence ≥ 0.3, going down ≥ 0.6; risk > 0.7
-forces `deep` with effort at least `xhigh`; `deep` alone runs at least `high`. If Jev does not answer (1.5 s timeout, error), the next prompt asks
+forces `deep` with effort at least `xhigh`; `deep` alone runs at least `high`, every other session at least `medium`
+(Sonnet 5.5's starting point for agentic coding: at `low` it can report a change done without checking it). If Jev does not answer (1.5 s timeout, error), the next prompt asks
 again.
 
 On Claude Code every subagent spawn (forks excepted) is classified on its own: `trivial → haiku`,
@@ -64,7 +65,7 @@ On Claude Code every subagent spawn (forks excepted) is classified on its own: `
 is Opus at a higher effort. A session is never put on haiku: it holds its model to the end, so `trivial` stays
 at `fast`. On Pi subagent models are pinned by the subagent extension and left alone.
 
-You see `[jev-router] session: sonnet · effort low` in the transcript and `jev · …` in the status line.
+You see `[jev-router] session: sonnet · effort medium` in the transcript and `jev · …` in the status line.
 
 ## Compact
 
