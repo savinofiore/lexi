@@ -183,6 +183,28 @@ the agent stops and asks. `.lexi/allow` is per-task scratch, gitignored by `init
 
 ## Quick start: Claude Code
 
+**In one prompt.** Open `claude` in your project folder and paste this. It installs the full suite (lexi,
+jev, ponytail, caveman) and prepares the Jev key:
+
+```text
+Install the lexi suite for Claude Code. Run these shell commands, stopping on the first failure:
+
+  claude plugin marketplace add DietrichGebert/ponytail
+  claude plugin marketplace add JuliusBrussee/caveman
+  claude plugin marketplace add savinofiore/lexi
+  claude plugin install lexi@lexi
+
+Then check ~/.claude/settings.json: if env.TYPESAFE_API_KEY is missing, add it with the value
+"PASTE_YOUR_KEY_HERE" and keep every other setting. Never write the key in a project file.
+Finish by listing what got installed, and remind me to put my key there, restart the session, and run
+/lexi:init answering yes to Jev.
+```
+
+New plugins load only in a new session, so the last step stays yours. Restart `claude` in the same folder,
+accept the trust prompt, and run `/lexi:init`. Answer **yes** to Jev.
+
+The same steps by hand:
+
 **1. Install.** Add the dependency marketplaces, then lexi. It installs ponytail, caveman and jev with it.
 
 ```
