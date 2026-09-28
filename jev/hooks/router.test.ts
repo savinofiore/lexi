@@ -52,16 +52,23 @@ describe('jev-router', () => {
     await drain($.turn.step(step(1)))
     await drain($.turn.step(step(2)))
     expect(seen.jevCalls).toBe(1)
-    expect(seen.steps).toEqual([0, 1, 2].map(() => ({ model: 'claude-sonnet-5', effort: 'low' })))
-    expect(seen.logs).toContain('[jev-router] session: sonnet · effort low')
+    expect(seen.steps).toEqual([0, 1, 2].map(() => ({ model: 'claude-sonnet-5-5', effort: 'medium' })))
+    expect(seen.logs).toContain('[jev-router] session: sonnet · effort medium')
     expect(seen.logs).toContain("[jev-router] reusing the first prompt's choice")
   })
 
-  test('never puts the session on haiku: trivial is held at sonnet', async ($, on) => {
+  test('never puts the session on haiku: trivial is held at sonnet, at least medium effort', async ($, on) => {
     const { seen } = setupWorld(on, true, () => jevReply('trivial', 0.2))
     await $.prompt.submit(prompt('read the README'))
     await drain($.turn.step(step(0)))
-    expect(seen.steps).toEqual([{ model: 'claude-sonnet-5', effort: 'low' }])
+    expect(seen.steps).toEqual([{ model: 'claude-sonnet-5-5', effort: 'medium' }])
+  })
+
+  test('fast keeps an effort above the medium floor', async ($, on) => {
+    const { seen } = setupWorld(on, true, () => jevReply('fast', 2.1))
+    await $.prompt.submit(prompt('apply the described change to the parser'))
+    await drain($.turn.step(step(0)))
+    expect(seen.steps).toEqual([{ model: 'claude-sonnet-5-5', effort: 'high' }])
   })
 
   test('leaves subagent steps alone', async ($, on) => {

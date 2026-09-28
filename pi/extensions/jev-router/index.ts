@@ -26,7 +26,7 @@ import { resolveTarget } from './models.ts'
 // which stays on the session's provider: the defaults must never move a claude-bridge session onto
 // the metered `anthropic` provider.
 const DEFAULT_TIERS: Record<SessionTier, string> = {
-  fast: 'claude-sonnet-5',
+  fast: 'claude-sonnet-5-5',
   balanced: 'claude-opus-5-5',
   deep: 'claude-opus-5-5',
 }
