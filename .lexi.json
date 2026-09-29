@@ -1,0 +1,10 @@
+{
+  "gate": "python3 hooks/tdd_guard_test.py && python3 versions_test.py && python3 skills_frontmatter_test.py && python3 jev/review/test_review.py",
+  "source": "",
+  "tests": "",
+  "test_suffix": "_test.py",
+  "testable": [
+    "hooks/tdd_guard.py"
+  ],
+  "jev": {}
+}

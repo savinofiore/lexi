@@ -95,9 +95,8 @@ Then create `.lexi/` containing an empty `allow` file, and add `.lexi/allow` to
 
 ## 5. Gate subagent — mandatory question, optional feature
 
-STOP. Before writing any file, ask the user this exact question and wait for
-a reply — do not infer an answer, do not skip it because a gate command was
-found, do not proceed to step 6 without it:
+Before writing any file, ask the user this question and wait for the answer,
+even when a gate command was found — where the gate runs is their call:
 
 > Want the gate offloaded to a subagent (`lexi-gate`), or run it inline?
 
@@ -132,8 +131,8 @@ Add `"gate_agent": true` to `.lexi.json`.
 
 ## 6. Jev — mandatory question, optional feature
 
-STOP. Ask the user this exact question and wait for a reply — do not infer an
-answer, do not skip it:
+Ask the user this question and wait for the answer. Jev sends prompts,
+transcripts and diffs to a third-party API, so enabling it is their call:
 
 > Enable Jev in this project (model router, verbatim compaction, code review
 > after the last GREEN)? It calls TypeSafe's API with `TYPESAFE_API_KEY`.

@@ -40,7 +40,8 @@ against a guessed cause goes green while the bug is still there.
   waits for confirmation, then runs full RED→GREEN cycle. That skill owns proposal
   and execution.
   
-- **Scope clear, manual flow?** Continue to step 2 below (legacy path).
+- **Scope clear, test names already known** (the user named them, or grill
+  settled them)? Skip the proposal round and continue to step 2 below.
 
 ## 2. Confirm the seams — the only checkpoint
 
