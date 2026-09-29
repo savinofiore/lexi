@@ -15,17 +15,15 @@ Read `.lexi.json` first. No `.lexi.json` → invoke `/skill:lexi-init`.
 Running the gate: `.lexi.json` has `"gate_agent": true` → dispatch to the
 `lexi-gate` subagent (`{agent: "lexi-gate", task: "<gate command>", agentScope:
 "project"}`) instead of running it in bash. Otherwise run the gate command
-directly, as before.
+directly.
 
 ## 1. Understand the feature
 
 Read the code the feature touches. Run the gate to verify starting state. If scope is genuinely open (multiple defensible designs), invoke `/skill:lexi-grill` first, get decisions, then return here.
 
-**Bug**: name the root cause. If symptom could come from multiple layers, list the 3 most likely with one log line that separates them. Ask user to reproduce with logs before proposing tests.
-
 ## 2. Propose unit tests
 
-Analyze the feature and propose **3-5 concrete unit tests**, not widget/UI tests. Each test:
+Analyze the feature and propose **one concrete unit test per behaviour it adds**, not widget/UI tests. Each test:
 - Names what the unit does (e.g., "applies a 10% discount to total")
 - States expected input → output
 - No internal implementation details

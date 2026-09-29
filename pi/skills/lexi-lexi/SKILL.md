@@ -18,7 +18,7 @@ first.
 Running the gate: `.lexi.json` has `"gate_agent": true` → dispatch to the
 `lexi-gate` subagent (`{agent: "lexi-gate", task: "<gate command>", agentScope:
 "project"}`) instead of running it in bash. Otherwise run the gate command
-directly, as before.
+directly.
 
 This skill owns routing. Test quality lives in `lexi-tdd`, scope interrogation in
 `lexi-grill`, test proposal in `lexi-feature` (new tests), bug fixing in `lexi-bug`
@@ -50,7 +50,8 @@ against a guessed cause goes green while the bug is still there.
   tests, waits for confirmation, then runs full RED→GREEN cycle. That skill owns
   proposal and execution.
 
-- **Scope clear, manual flow?** Continue to step 2 below (legacy path).
+- **Scope clear, test names already known** (the user named them, or grill
+  settled them)? Skip the proposal round and continue to step 2 below.
 
 ## 2. Confirm the seams — the only checkpoint
 

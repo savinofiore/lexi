@@ -27,7 +27,9 @@ Identify the existing tests that should fail if the bug is present. These are:
 - Tests for the feature that is broken
 - Tests that assert the correct behavior (which the bug violates)
 
-Do NOT create new tests yet. You are rewriting existing ones.
+This flow rewrites existing tests; it creates none.
+No existing test covers the broken behaviour → hand off to `lexi:feature`: a new
+test proves the bug there.
 
 List them:
 - Test file + test name
@@ -52,10 +54,10 @@ Then wait. This is the only checkpoint before rewriting.
 
 ## 4. RED cycle — prove the bug
 
-1. **Rewrite tests** — update assertions in `.lexi/allow` tracked files to fail
-   if the bug exists
-2. **Run gate** — must fail for the bug reason, not setup error
-3. If red for wrong reason → fix the test, not code. If setup error → stop.
+1. **Allow** — write the confirmed test paths into `.lexi/allow`, one per line.
+2. **Rewrite tests** — update their assertions to fail if the bug exists
+3. **Run gate** — must fail for the bug reason, not setup error
+4. If red for wrong reason → fix the test, not code. If setup error → stop.
 
 All tests rewritten now, one gate run, one RED.
 

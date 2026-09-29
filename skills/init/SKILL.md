@@ -106,8 +106,8 @@ only set `autoUpdate` to `true`.
 
 ## 5. Jev — mandatory question, optional feature
 
-STOP. Ask the user this exact question and wait for a reply — do not infer an
-answer, do not skip it:
+Ask the user this question and wait for the answer. Jev sends prompts,
+transcripts and diffs to a third-party API, so enabling it is their call:
 
 > Enable Jev in this project (model router, verbatim compaction, code review
 > after the last GREEN)? It calls TypeSafe's API with `TYPESAFE_API_KEY`.
@@ -115,7 +115,7 @@ answer, do not skip it:
 No → write `"jev": false` in `.lexi.json` (so an update run does not ask again), move to step 6. Yes → check the prerequisites and name any
 that is missing; the user fixes them, you never ask for the key in chat:
 
-- the jev plugin: installed with lexi since 0.4.0; if `/jev:code-review` is not
+- the jev plugin: installed with lexi; if `/jev:code-review` is not
   in the skill list, `/plugin update lexi@lexi` or `/plugin install jev@lexi`;
 - Claude Code ≥ 2.1.276 (`claude --version`);
 - `TYPESAFE_API_KEY` under `env` in `~/.claude/settings.json` or exported in
