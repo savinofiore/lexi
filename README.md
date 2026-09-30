@@ -73,10 +73,13 @@ Install the lexi suite for Claude Code. Run these shell commands, stopping on th
   claude plugin install lexi@lexi
 
 Then check ~/.claude/settings.json: if env.TYPESAFE_API_KEY is missing, add it with the value
-"PASTE_YOUR_KEY_HERE" and keep every other setting. Never write the key in a project file.
-Finish by listing what got installed, and remind me to put my key there, restart the session, and run
+"PASTE_YOUR_KEY_HERE" and keep every other setting. Never write the key in a project file, and never
+print its value. Finish by listing what got installed, and remind me to put my key there, restart the session, and run
 /lexi:init answering yes to Jev.
 ```
+
+In auto mode Claude Code refuses to edit its own `~/.claude/settings.json` (`[Self-Modification]`): that is
+by design. Add the key by hand as in step 2 below.
 
 Then restart `claude` in the same folder (new plugins load only in a new session), accept the trust prompt,
 and run `/lexi:init`. Answer **yes** to Jev.
@@ -498,7 +501,9 @@ if missing. Skipping this step is fine: the project keeps working as before, wit
 
 > [!WARNING]
 > Without Python every guarded edit fails instead of being checked. macOS and most Linux distributions
-> already have it. On Windows, install it and check that `python3 --version` answers.
+> already have it. On Windows, install it and check that `python3 --version` answers. If `python3` opens the
+> Microsoft Store, turn off the `python3.exe` alias (Settings > Apps > Advanced app settings > App execution
+> aliases) and copy `python.exe` to `python3.exe` next to it.
 
 ---
 

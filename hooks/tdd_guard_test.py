@@ -94,6 +94,12 @@ with tempfile.TemporaryDirectory() as repo:
     assert run(repo, "Write", "lib/models/order.dart") == ALLOW
     del os.environ["LEXI_OFF"]
 
+    # Windows locale (cp1252) must not garble or crash on a non-ASCII path
+    payload = json.dumps({"tool_name": "Write", "tool_input": {"file_path": "lib/models/città_😁.dart"}, "cwd": repo})
+    proc = subprocess.run([sys.executable, GUARD], input=payload.encode("utf-8"), capture_output=True,
+                          env=dict(os.environ, PYTHONIOENCODING="cp1252"))
+    assert proc.returncode == BLOCK and "città_😁" in proc.stderr.decode("utf-8"), proc.stderr
+
 with tempfile.TemporaryDirectory() as repo:
     setup(repo, with_config=False)
     # no .lexi.json -> dormant, the project has not opted in
