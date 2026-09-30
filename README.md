@@ -486,6 +486,38 @@ Then rerun init in each project (`/lexi:init` or `/lexi-init`). On an existing `
 `testable` and the rest, and asks only what the new version added. On Pi it also installs ponytail or caveman
 if missing. Skipping this step is fine: the project keeps working as before, without the new features.
 
+### Coming from lexi < 0.9.0: move the Jev key
+
+Before 0.9.0 the Jev key lived globally, in `~/.claude/settings.json` or a shell export, so every project
+used it. From 0.9.0 it lives per project in the gitignored `.claude/settings.local.json`. If you set up Jev
+with an older version, open `claude` in each project that uses Jev and paste this prompt:
+
+```text
+Fix the TypeSafe (Jev) key setup in this project. Fixed rules: never print a key value (if you show
+a line, write <redacted> in place of the value), never ask me for the key in chat, stop at the first
+error and tell me what happened.
+
+1. Sync the repo: `git pull` on the main branch. If the pull is blocked by local changes to
+   .claude/settings.local.json, move it to .claude/settings.local.json.bak, pull again, and carry its
+   permissions and MCP toggles into the new file at step 4.
+2. Check the local file can never reach git: `git check-ignore -q .claude/settings.local.json` must
+   succeed and `git ls-files .claude/settings.local.json` must print nothing. If not, stop and tell me.
+3. Update the plugins: `claude plugin marketplace update lexi`, then `claude plugin update lexi@lexi`
+   and `claude plugin update jev@lexi`.
+4. If .claude/settings.local.json does not exist, create it (from .claude/settings.local.json.example
+   when the project has one). If it exists, add what is missing without touching the rest. Put the
+   placeholder "PASTE_YOUR_KEY_HERE" in env.TYPESAFE_API_KEY unless a value is already there.
+5. Remove the old global keys: env.TYPESAFE_API_KEY from ~/.claude/settings.json (keep everything
+   else), and every `export TYPESAFE_API_KEY=` line from ~/.zshrc, ~/.zprofile, ~/.bashrc,
+   ~/.bash_profile and ~/.profile. If you cannot edit ~/.claude/settings.json (Self-Modification
+   block), tell me the file and what to remove, and I will do it by hand.
+6. Summary: what you changed, file by file (for keys, file:line only). Remind me to paste the project
+   key by hand into .claude/settings.local.json, open a new terminal and restart claude.
+```
+
+Get the key over a separate channel (a password manager or vault), never in the same message as the
+prompt. If an old global key was shared, revoke it.
+
 ---
 
 ## Requirements
