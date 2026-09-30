@@ -4,6 +4,7 @@ import os
 import sys
 import tempfile
 import unittest
+import unittest.mock
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import review  # noqa: E402
@@ -231,6 +232,19 @@ class HandoffTest(unittest.TestCase):
         self.assertEqual(result["previous_verdict"], "CONVENTIONS")
         self.assertEqual(set(result["deltas"]), {"layer_bypass", "readability"})
         self.assertEqual(result["deltas"]["layer_bypass"]["delta"], -0.84)
+
+
+class ApiKeyTest(unittest.TestCase):
+    def test_shell_wins_then_local_settings_then_error(self):
+        with tempfile.TemporaryDirectory() as root, unittest.mock.patch.dict(os.environ, clear=True):
+            with self.assertRaises(review.ReviewError):
+                review.read_api_key(root)
+            os.makedirs(os.path.join(root, ".claude"))
+            with open(os.path.join(root, review.LOCAL_SETTINGS), "w", encoding="utf-8") as handle:
+                json.dump({"env": {"TYPESAFE_API_KEY": " local "}}, handle)
+            self.assertEqual(review.read_api_key(root), "local")
+            os.environ["TYPESAFE_API_KEY"] = "shell"
+            self.assertEqual(review.read_api_key(root), "shell")
 
 
 if __name__ == "__main__":

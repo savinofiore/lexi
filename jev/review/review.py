@@ -28,6 +28,7 @@ MAX_ATTEMPTS = 3
 RETRY_STATUSES = {429, 529}
 QUESTION_FIELDS = {"type", "instructions", "criteria"}
 OVERLAY = os.path.join(".lexi", "review.json")
+LOCAL_SETTINGS = os.path.join(".claude", "settings.local.json")
 TRUNCATED = "\n[... truncated by jev-review: file over budget ...]\n"
 OPS = {"gte": (">=", lambda a, b: a >= b), "gt": (">", lambda a, b: a > b),
        "lte": ("<=", lambda a, b: a <= b), "lt": ("<", lambda a, b: a < b)}
@@ -101,13 +102,15 @@ def load_config(root):
     return merge_overlay(load_checks(), load_json("policy.json"), read_project_json(root, OVERLAY))
 
 
-def read_api_key():
-    key = os.environ.get("TYPESAFE_API_KEY", "").strip()
+# Claude Code already merges this file's `env` into ours; Pi does not, so read it directly.
+def read_api_key(root):
+    local = read_project_json(root, LOCAL_SETTINGS).get("env", {}).get("TYPESAFE_API_KEY", "")
+    key = (os.environ.get("TYPESAFE_API_KEY", "") or local).strip()
     if key:
         return key
     raise ReviewError(
-        "TYPESAFE_API_KEY not set. Export it in the shell (`export TYPESAFE_API_KEY=...`) "
-        "or add it under \"env\" in ~/.claude/settings.json. The key is never printed.")
+        f"TYPESAFE_API_KEY not set. Add it under \"env\" in {LOCAL_SETTINGS} (gitignored) "
+        "or export it in the shell. The key is never printed.")
 
 
 # --- diff source --------------------------------------------------------------
@@ -521,7 +524,7 @@ def build_report(args, checks, policy, testable):
     files = split_diff(diff)
     if not files:
         return None
-    questions, key = public_questions(checks), read_api_key()
+    questions, key = public_questions(checks), read_api_key(project_root())
     overhead = len(title) + len(description) + sum(len(path) + 20 for path, _ in files)
     parts, omitted = split_parts(files, checks, policy, part_budget(policy, questions, overhead))
     states = [{**build_state(title, description, part, files, omitted), "testable_paths": testable} for part in parts]

@@ -1,5 +1,4 @@
 import { readFileSync } from 'node:fs'
-import { homedir } from 'node:os'
 import { join } from 'node:path'
 
 // Pi only. On Claude Code the jev plugin is installed on its own; on Pi it ships inside the lexi
@@ -22,13 +21,13 @@ export const jevConfig = (cwd: string): JevConfig | undefined => {
   return typeof jev === 'object' && jev !== null ? (jev as JevConfig) : undefined
 }
 
-// Pi has no `env` block in its settings: the key is exported in the shell. As a fallback read the
-// one Claude Code keeps in ~/.claude/settings.json, so on one machine it lives in one place. The
-// value is never printed.
+// Pi has no `env` block in its settings: the key is exported in the shell or, like on Claude Code,
+// kept under `env` in the project's gitignored .claude/settings.local.json. The value is never printed.
 let cached: string | undefined | null = null
 
-export const jevApiKey = (): string | undefined => {
+export const jevApiKey = (cwd: string): string | undefined => {
   if (cached !== null) return cached
-  cached = process.env.TYPESAFE_API_KEY?.trim() || readJson<{ env?: Record<string, string> }>(join(homedir(), '.claude', 'settings.json'))?.env?.TYPESAFE_API_KEY?.trim() || undefined
+  const local = readJson<{ env?: Record<string, string> }>(join(cwd, '.claude', 'settings.local.json'))?.env?.TYPESAFE_API_KEY
+  cached = process.env.TYPESAFE_API_KEY?.trim() || local?.trim() || undefined
   return cached
 }

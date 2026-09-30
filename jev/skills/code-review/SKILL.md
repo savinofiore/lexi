@@ -33,7 +33,7 @@ $REVIEW <source> --json > "$SCRATCH/jev-1.json"
 | `.diff`/`.patch` file | `--diff <file>` |
 | PR number (`326`) | `gh pr diff 326 > "$SCRATCH/pr.diff"` and `gh pr view 326 --json title,body`, then `--diff "$SCRATCH/pr.diff" --title "<title>" --description "<body>"` |
 
-Exit 4 with `TYPESAFE_API_KEY not set` → explain where it goes (shell, or `env` in `~/.claude/settings.json`)
+Exit 4 with `TYPESAFE_API_KEY not set` → explain where it goes (`env` in the gitignored `.claude/settings.local.json`, or the shell)
 and stop; never ask for the key in chat. Other exit 4 (bad `.lexi/review.json`, network) → quote the error and
 stop. `Empty diff` → say so and stop. `omitted_files > 0` → say it first: the verdict is on a partial diff, with the rules on `suspended_checks` not applied.
 

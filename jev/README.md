@@ -16,10 +16,10 @@ flows.
 
 ## Requirements
 
-- `TYPESAFE_API_KEY`: Claude Code reads it under `env` in `~/.claude/settings.json` (or the shell). Pi needs it
-  exported in the shell it starts from (`~/.zshrc`): the router and compaction fall back to
-  `~/.claude/settings.json`, the review does not and exits 4. Both runtimes on one machine: set it in both
-  places. Never put it in a project settings file that is committed.
+- `TYPESAFE_API_KEY`: under `env` in the project's `.claude/settings.local.json`, one key per project.
+  Claude Code merges that file's `env` itself; on Pi the router, compaction and review read the file directly.
+  A shell export also works and wins. The file must be gitignored
+  (`git check-ignore .claude/settings.local.json`): never put the key in a settings file that is committed.
   Without it every level stays off and says so once.
 - Python 3 for the review (standard library only; lexi already needs it).
 - Claude Code ≥ 2.1.276 for the router and compaction hooks.
@@ -167,4 +167,4 @@ A Claude Code plugin gets exactly one hooks module, and `register` must call `on
 ## Turning it off
 
 Claude Code: `/plugin uninstall jev@lexi`, or drop `CLAUDE_CODE_ENABLE_FUNCTION_HOOKS` from the project settings.
-Pi: remove the `jev` object from `.lexi.json`. Either runtime, one machine only: unset `TYPESAFE_API_KEY`.
+Pi: remove the `jev` object from `.lexi.json`. Either runtime, one machine only: remove `TYPESAFE_API_KEY` from `.claude/settings.local.json`.

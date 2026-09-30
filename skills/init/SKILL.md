@@ -118,8 +118,11 @@ that is missing; the user fixes them, you never ask for the key in chat:
 - the jev plugin: installed with lexi; if `/jev:code-review` is not
   in the skill list, `/plugin update lexi@lexi` or `/plugin install jev@lexi`;
 - Claude Code ≥ 2.1.276 (`claude --version`);
-- `TYPESAFE_API_KEY` under `env` in `~/.claude/settings.json` or exported in
-  the shell — never in a project settings file that is committed.
+- `TYPESAFE_API_KEY` under `env` in `.claude/settings.local.json` — per project,
+  never in a settings file that is committed. Run
+  `git check-ignore -q .claude/settings.local.json`: if it fails, the file is
+  tracked or not ignored. Stop and say so; the fix is `git rm --cached` plus a
+  `.gitignore` line, and the user decides.
 
 Then write, merging into existing files and never overwriting other keys:
 

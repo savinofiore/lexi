@@ -137,10 +137,11 @@ transcripts and diffs to a third-party API, so enabling it is their call:
 > Enable Jev in this project (model router, verbatim compaction, code review
 > after the last GREEN)? It calls TypeSafe's API with `TYPESAFE_API_KEY`.
 
-No → write `"jev": false` in `.lexi.json` (so an update run does not ask again), move to step 7. Yes → the key must be exported in the shell
-Pi starts from (`export TYPESAFE_API_KEY=...` in `~/.zshrc`). Under `env` in
-`~/.claude/settings.json` only the router and compaction find it; the review
-needs the export. Name it if missing; never ask for the key in chat. Then ask:
+No → write `"jev": false` in `.lexi.json` (so an update run does not ask again), move to step 7. Yes → the key goes under `env` in
+`.claude/settings.local.json` (a shell export also works). Run
+`git check-ignore -q .claude/settings.local.json`: if it fails, the file is
+tracked or not ignored — stop and say so. Name the key if missing; never ask
+for it in chat. Then ask:
 
 1. **Which model per tier?** The router moves between three tiers: `fast`
    (mechanical work), `balanced` (ordinary engineering), `deep` (hard or

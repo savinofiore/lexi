@@ -72,13 +72,14 @@ Install the lexi suite for Claude Code. Run these shell commands, stopping on th
   claude plugin marketplace add savinofiore/lexi
   claude plugin install lexi@lexi
 
-Then check ~/.claude/settings.json: if env.TYPESAFE_API_KEY is missing, add it with the value
-"PASTE_YOUR_KEY_HERE" and keep every other setting. Never write the key in a project file, and never
-print its value. Finish by listing what got installed, and remind me to put my key there, restart the session, and run
+Then check .claude/settings.local.json in this project: make sure git ignores it (git check-ignore;
+if it is tracked, untrack it and add it to .gitignore). If env.TYPESAFE_API_KEY is missing there, add it
+with the value "PASTE_YOUR_KEY_HERE" and keep every other setting. Never write the key in a committed
+file, and never print its value. Finish by listing what got installed, and remind me to put my key there, restart the session, and run
 /lexi:init answering yes to Jev.
 ```
 
-In auto mode Claude Code refuses to edit its own `~/.claude/settings.json` (`[Self-Modification]`): that is
+In auto mode Claude Code may refuse to edit its own settings files (`[Self-Modification]`): that is
 by design. Add the key by hand as in step 2 below.
 
 Then restart `claude` in the same folder (new plugins load only in a new session), accept the trust prompt,
@@ -98,7 +99,9 @@ and run `/lexi:init`. Answer **yes** to Jev.
 
 From a shell: `claude plugin marketplace add savinofiore/lexi && claude plugin install lexi@lexi`.
 
-**2. Jev key** (only for Jev). Put it in `~/.claude/settings.json`, never in a committed project file:
+**2. Jev key** (only for Jev). Put it in the project's `.claude/settings.local.json`, one key per project.
+Claude Code merges its `env` into every hook and command. Check that git ignores the file
+(`git check-ignore .claude/settings.local.json`); a tracked local file leaks the key on the next push:
 
 ```json
 { "env": { "TYPESAFE_API_KEY": "..." } }
@@ -145,11 +148,8 @@ pi install git:github.com/JuliusBrussee/caveman
 pi install git:github.com/savinofiore/lexi
 ```
 
-**2. Jev key** (only for Jev). Export it in the shell Pi starts from, then restart Pi:
-
-```bash
-export TYPESAFE_API_KEY=...   # ~/.zshrc
-```
+**2. Jev key** (only for Jev). Same place as on Claude Code: `env.TYPESAFE_API_KEY` in the project's
+gitignored `.claude/settings.local.json`. A shell export (`export TYPESAFE_API_KEY=...`) also works and wins.
 
 **3. Opt the project in.** Approve the folder (once, or `pi -a` for one run), then run:
 
@@ -164,9 +164,9 @@ export TYPESAFE_API_KEY=...   # ~/.zshrc
 <details>
 <summary><b>Pi details: key lookup, init questions, package contents</b></summary>
 
-**Key lookup.** Pi has no `env` block. The router and compaction fall back to `env.TYPESAFE_API_KEY` in
-`~/.claude/settings.json`, but the review (`review.py`) reads only the shell and exits 4 without it. If you
-use both runtimes, keep the same key in both places.
+**Key lookup.** Pi has no `env` block. The router, compaction and review read the shell first, then
+`env.TYPESAFE_API_KEY` in the project's `.claude/settings.local.json`. `~/.claude/settings.json` is not read:
+the key is per project, so both runtimes share the one file.
 
 **Extra init questions.** Besides the gate and the testable paths, `init` asks two questions on Pi:
 
