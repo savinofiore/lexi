@@ -133,13 +133,13 @@ def allowlisted(cwd, rel):
 
 
 def block(msg):
-    sys.stderr.write(msg)
+    sys.stderr.buffer.write(msg.encode("utf-8"))  # not the locale codec: cp1252 on Windows
     sys.exit(2)
 
 
 def main():
     try:
-        data = json.loads(sys.stdin.read())
+        data = json.loads(sys.stdin.buffer.read())  # UTF-8 bytes, whatever the locale
     except (json.JSONDecodeError, ValueError):
         sys.exit(0)  # unreadable input -> never block
 

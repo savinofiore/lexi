@@ -58,7 +58,7 @@ def load_checks():
 
 
 def project_root():
-    result = subprocess.run(["git", "rev-parse", "--show-toplevel"], capture_output=True, text=True)
+    result = subprocess.run(["git", "rev-parse", "--show-toplevel"], capture_output=True, encoding="utf-8", errors="replace")
     return result.stdout.strip() if result.returncode == 0 else os.getcwd()
 
 
@@ -113,7 +113,7 @@ def read_api_key():
 # --- diff source --------------------------------------------------------------
 
 def run_git(*args):
-    result = subprocess.run(["git", *args], capture_output=True, text=True)
+    result = subprocess.run(["git", *args], capture_output=True, encoding="utf-8", errors="replace")
     if result.returncode != 0:
         raise ReviewError(f"git {' '.join(args)}: {result.stderr.strip()}")
     return result.stdout
@@ -135,7 +135,7 @@ def working_diff():
     diff = run_git("diff", "HEAD")
     for path in run_git("ls-files", "--others", "--exclude-standard").splitlines():
         # --no-index exits 1 when it finds differences: not an error
-        diff += subprocess.run(["git", "diff", "--no-index", "--", "/dev/null", path], capture_output=True, text=True).stdout
+        diff += subprocess.run(["git", "diff", "--no-index", "--", "/dev/null", path], capture_output=True, encoding="utf-8", errors="replace").stdout
     return diff
 
 
@@ -547,6 +547,8 @@ def build_report(args, checks, policy, testable):
 
 
 def main(argv=None):
+    for stream in (sys.stdout, sys.stderr):  # Windows consoles and pipes default to cp1252: █ ═ → would crash
+        stream.reconfigure(encoding="utf-8", errors="replace")
     args = parse_args(argv)
     try:
         root = project_root()
