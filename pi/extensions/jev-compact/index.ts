@@ -54,7 +54,7 @@ export default function (pi: ExtensionAPI) {
 
 // Every reason not to compact becomes a string: the caller defers to the native summary.
 async function planCompaction(event: SessionBeforeCompactEvent, ctx: ExtensionContext): Promise<Plan | string> {
-  const key = jevApiKey()
+  const key = jevApiKey(ctx.cwd)
   if (!key) return 'TYPESAFE_API_KEY missing'
   const { preparation } = event
   const turns = toTurns(convertToLlm([...preparation.messagesToSummarize, ...preparation.turnPrefixMessages]))

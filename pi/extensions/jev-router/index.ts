@@ -88,8 +88,8 @@ function report(ctx: ExtensionContext, answer: Answer, { fromModel, fromEffort, 
 }
 
 async function classify(ctx: ExtensionContext, prompt: string): Promise<Answer | undefined> {
-  const key = jevApiKey()
-  if (!key) return warnOnce(ctx, 'TYPESAFE_API_KEY missing: export it in the shell or put it under "env" in ~/.claude/settings.json. Router off.')
+  const key = jevApiKey(ctx.cwd)
+  if (!key) return warnOnce(ctx, 'TYPESAFE_API_KEY missing: put it under "env" in .claude/settings.local.json or export it in the shell. Router off.')
   const startedAt = Date.now()
   const outcome = await askJev(prompt, key)
   if (typeof outcome === 'string') return warnOnce(ctx, `jev unavailable: ${outcome}, retrying on the next prompt`)

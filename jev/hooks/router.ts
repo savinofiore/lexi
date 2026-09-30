@@ -123,7 +123,7 @@ async function readApiKey($: EngineInterface): Promise<string | undefined> {
   if (apiKey !== null) return apiKey
   apiKey = await $.env.get('TYPESAFE_API_KEY')
   if (apiKey) $.ui.log(`[jev-router] ready — ${JEV_URL}, timeout ${TIMEOUT_MS}ms`, DEBUG)
-  else $.ui.log('[jev-router] TYPESAFE_API_KEY missing: add it under "env" in ~/.claude/settings.json or export it in the shell. Router off.')
+  else $.ui.log('[jev-router] TYPESAFE_API_KEY missing: add it under "env" in .claude/settings.local.json or export it in the shell. Router off.')
   return apiKey
 }
 
