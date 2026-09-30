@@ -490,30 +490,29 @@ if missing. Skipping this step is fine: the project keeps working as before, wit
 
 Before 0.9.0 the Jev key lived globally, in `~/.claude/settings.json` or a shell export, so every project
 used it. From 0.9.0 it lives per project in the gitignored `.claude/settings.local.json`. If you set up Jev
-with an older version, open `claude` in each project that uses Jev and paste this prompt:
+with an older version, open `claude` in each project that uses Jev and paste this prompt. It removes the
+old key everywhere, updates lexi and leaves a placeholder for the new key:
 
 ```text
-Fix the TypeSafe (Jev) key setup in this project. Fixed rules: never print a key value (if you show
-a line, write <redacted> in place of the value), never ask me for the key in chat, stop at the first
-error and tell me what happened.
+Remove the old, deprecated TypeSafe (Jev) key and update lexi. Fixed rules: never print a key value
+(if you show a line, write <redacted> in place of the value), never ask me for the key in chat, stop
+at the first error and tell me what happened.
 
-1. Sync the repo: `git pull` on the main branch. If the pull is blocked by local changes to
-   .claude/settings.local.json, move it to .claude/settings.local.json.bak, pull again, and carry its
-   permissions and MCP toggles into the new file at step 4.
-2. Check the local file can never reach git: `git check-ignore -q .claude/settings.local.json` must
-   succeed and `git ls-files .claude/settings.local.json` must print nothing. If not, stop and tell me.
-3. Update the plugins: `claude plugin marketplace update lexi`, then `claude plugin update lexi@lexi`
+1. Delete every TYPESAFE_API_KEY you find in: env in ~/.claude/settings.json, env in this project's
+   .claude/settings.local.json, and `export TYPESAFE_API_KEY=` lines in ~/.zshrc, ~/.zprofile,
+   ~/.bashrc, ~/.bash_profile and ~/.profile. Touch nothing else in those files. If you cannot edit
+   ~/.claude/settings.json (Self-Modification block), tell me what to remove and I will do it by hand.
+2. Update the plugins: `claude plugin marketplace update lexi`, then `claude plugin update lexi@lexi`
    and `claude plugin update jev@lexi`.
-4. If .claude/settings.local.json does not exist, create it (from .claude/settings.local.json.example
-   when the project has one). If it exists, add what is missing without touching the rest. Put the
-   placeholder "PASTE_YOUR_KEY_HERE" in env.TYPESAFE_API_KEY unless a value is already there.
-5. Remove the old global keys: env.TYPESAFE_API_KEY from ~/.claude/settings.json (keep everything
-   else), and every `export TYPESAFE_API_KEY=` line from ~/.zshrc, ~/.zprofile, ~/.bashrc,
-   ~/.bash_profile and ~/.profile. If you cannot edit ~/.claude/settings.json (Self-Modification
-   block), tell me the file and what to remove, and I will do it by hand.
-6. Summary: what you changed, file by file (for keys, file:line only). Remind me to paste the project
-   key by hand into .claude/settings.local.json, open a new terminal and restart claude.
+3. In this project's .claude/settings.local.json set env.TYPESAFE_API_KEY to "PASTE_YOUR_KEY_HERE",
+   keeping the rest of the file (create it if missing).
+4. Summary: what you removed (file:line only), lexi and jev versions after the update. Remind me to
+   paste the new key by hand into the file from step 3, fully quit the editor (Cmd+Q) and the
+   terminal, reopen them and restart claude.
 ```
+
+Quitting the editor matters: editors built on VS Code read the shell environment once at launch and pass
+it to every integrated terminal, so an old exported key survives until the app restarts.
 
 Get the key over a separate channel (a password manager or vault), never in the same message as the
 prompt. If an old global key was shared, revoke it.
