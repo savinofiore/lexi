@@ -16,18 +16,24 @@ stays out of the UI layer, where a deterministic unit test does not exist.
 
 Escape hatch: `LEXI_OFF=1`.
 
-ponytail: Bash is not matched, so `sed -i` and heredocs walk past this guard.
-Add a Bash command parser only if that turns out to be a real leak in practice.
+Bash answers to the same two rules for the files a command writes through `>`,
+`>>`, `tee [-a]` or `sed -i`; an append (`>>`, `tee -a`) counts as an insertion.
+ponytail: a regex over the command, not a shell parser. `cp`, `mv`, `python -c`
+and paths in variables still walk past; parse more only if one of them leaks.
 
 Hook contract: stdin JSON {tool_name, tool_input, cwd}; exit 0 = allow,
 exit 2 + stderr = block and show the reason to the agent.
 """
 import json
 import os
+import re
+import shlex
 import subprocess
 import sys
 
-GUARDED_TOOLS = ("Edit", "Write", "MultiEdit", "NotebookEdit")
+GUARDED_TOOLS = ("Edit", "Write", "MultiEdit", "NotebookEdit", "Bash")
+TARGET = r"""['"]?([^\s;&|<>()'"]+)"""
+REDIRECT = re.compile(r"(>>?)\s*" + TARGET)
 
 NO_MIRROR_MSG = """\
 lexi — write to `{rel}` BLOCKED.
@@ -124,6 +130,27 @@ def is_pure_insertion(tool_name, tool_input):
     )
 
 
+def bash_writes(command):
+    """[(path, is_append)] for every file the command writes through `>`, `>>`, `tee`, `sed -i`."""
+    writes = [(path, op == ">>") for op, path in REDIRECT.findall(command)]
+    for segment in re.split(r"[;&|\n]", command):
+        writes += segment_writes(segment)
+    return writes
+
+
+def segment_writes(segment):
+    """`tee [-a] files...` and `sed -i ... file`, one simple command at a time."""
+    try:
+        words = shlex.split(segment)
+    except ValueError:
+        return []
+    if words[:1] == ["tee"]:
+        return [(word, "-a" in words) for word in words[1:] if not word.startswith("-")]
+    if words[:1] == ["sed"] and any(word.startswith(("-i", "--in-place")) for word in words):
+        return [(words[-1], False)]
+    return []
+
+
 def allowlisted(cwd, rel):
     try:
         with open(os.path.join(cwd, ".lexi", "allow"), encoding="utf-8") as fh:
@@ -137,6 +164,27 @@ def block(msg):
     sys.exit(2)
 
 
+def violation(cwd, cfg, rel, is_insertion):
+    """The block message for writing `rel`, or None when the write is allowed."""
+    if is_test_file(rel, cfg):
+        if not git_tracks(cwd, rel) or allowlisted(cwd, rel) or is_insertion:
+            return None
+        return REWRITE_MSG.format(rel=rel)
+    if is_testable(rel, cfg):
+        mirror = mirror_of(rel, cfg)
+        if mirror and not os.path.exists(os.path.join(cwd, mirror)):
+            return NO_MIRROR_MSG.format(rel=rel, mirror=mirror)
+    return None
+
+
+def writes_of(tool_name, tool_input):
+    """[(file_path, is_insertion)] the tool call is about to write."""
+    if tool_name == "Bash":
+        return bash_writes(tool_input.get("command") or "")
+    file_path = tool_input.get("file_path") or tool_input.get("notebook_path") or ""
+    return [(file_path, is_pure_insertion(tool_name, tool_input))] if file_path else []
+
+
 def main():
     try:
         data = json.loads(sys.stdin.buffer.read())  # UTF-8 bytes, whatever the locale
@@ -147,30 +195,16 @@ def main():
     if tool_name not in GUARDED_TOOLS or os.environ.get("LEXI_OFF"):
         sys.exit(0)
 
-    tool_input = data.get("tool_input") or {}
-    file_path = tool_input.get("file_path") or tool_input.get("notebook_path") or ""
-    if not file_path:
-        sys.exit(0)
-
+    writes = writes_of(tool_name, data.get("tool_input") or {})
     cwd = data.get("cwd") or os.getcwd()
-    cfg = load_config(cwd)
+    cfg = load_config(cwd) if writes else None
     if not cfg:
-        sys.exit(0)  # project has not opted in -> dormant
+        sys.exit(0)  # nothing written, or project has not opted in -> dormant
 
-    rel = to_rel(file_path, cwd)
-
-    if is_test_file(rel, cfg):
-        if not git_tracks(cwd, rel):
-            sys.exit(0)  # new test file -> free
-        if allowlisted(cwd, rel) or is_pure_insertion(tool_name, tool_input):
-            sys.exit(0)
-        block(REWRITE_MSG.format(rel=rel))
-
-    if is_testable(rel, cfg):
-        mirror = mirror_of(rel, cfg)
-        if mirror and not os.path.exists(os.path.join(cwd, mirror)):
-            block(NO_MIRROR_MSG.format(rel=rel, mirror=mirror))
-
+    for file_path, is_insertion in writes:
+        msg = violation(cwd, cfg, to_rel(file_path, cwd), is_insertion)
+        if msg:
+            block(msg)
     sys.exit(0)
 
 
