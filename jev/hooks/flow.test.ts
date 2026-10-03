@@ -13,8 +13,8 @@ const flowReply = (choice: string, confidence: number): HttpResponse => ({
 const setupWorld = (on: On, hasLexi: boolean, reply: () => HttpResponse | Promise<HttpResponse>) => {
   mock.clock(on)
   mock.env(on, { TYPESAFE_API_KEY: 'test-key' })
-  const seen = { flowCalls: 0, contexts: [] as (readonly string[] | undefined)[] }
-  on('ui.log', async () => ({ value: undefined }))
+  const seen = { flowCalls: 0, contexts: [] as (readonly string[] | undefined)[], shown: [] as string[] }
+  on('ui.log', async (_$, e) => (e.to !== 'debug' && seen.shown.push(e.text), { value: undefined }))
   on('ui.status', async () => ({ value: undefined }))
   on('fs.read', async (_$, e) => {
     if (hasLexi && e.path.endsWith('.lexi.json')) return { value: '{"jev":{}}' }
@@ -52,5 +52,23 @@ describe('jev-router: lexi flow', () => {
     await $.prompt.submit(prompt('the total ignores the discount'))
     expect(seen.flowCalls).toBe(0)
     expect(seen.contexts).toEqual([undefined])
+  })
+
+  test('shows the flow and the skill it ordered in the transcript', async ($, on) => {
+    const seen = setupWorld(on, true, () => flowReply('bug', 0.82))
+    await $.prompt.submit(prompt('the total ignores the discount'))
+    expect(seen.shown.filter((line) => line.startsWith('[jev-flow]'))).toEqual(['[jev-flow] bug (0.82) → lexi:bug'])
+  })
+
+  test('below the threshold it shows the fallback to lexi:lexi', async ($, on) => {
+    const seen = setupWorld(on, true, () => flowReply('feature', 0.45))
+    await $.prompt.submit(prompt('make the title red'))
+    expect(seen.shown.filter((line) => line.startsWith('[jev-flow]'))).toEqual(['[jev-flow] feature (0.45) → lexi:lexi'])
+  })
+
+  test('none shows nothing', async ($, on) => {
+    const seen = setupWorld(on, true, () => flowReply('none', 0.95))
+    await $.prompt.submit(prompt('ciao'))
+    expect(seen.shown.filter((line) => line.startsWith('[jev-flow]'))).toEqual([])
   })
 })
