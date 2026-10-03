@@ -17,6 +17,7 @@ import {
   tierRankOfModel,
   TIMEOUT_MS,
 } from '../../../jev/shared/router-policy.ts'
+import { flowContext, FLOW_QUESTIONS, isRoutable, parseFlow } from '../../../jev/shared/flow-policy.ts'
 import { jevApiKey, jevConfig } from '../../../jev/shared/pi-config.ts'
 import { resolveTarget } from './models.ts'
 
@@ -42,16 +43,30 @@ export default function (pi: ExtensionAPI) {
     hasApplied = false
     ctx.ui.setStatus(STATUS_KEY, undefined)
   })
-  // One classification per session: switching model midway throws away the prompt cache.
+  // The model once per session (switching midway throws away the prompt cache), the lexi flow on every prompt.
   pi.on('before_agent_start', async (event, ctx) => {
-    if (hasApplied) return
     const config = jevConfig(ctx.cwd)
     if (!config) return
-    sessionAnswer ??= await classify(ctx, event.prompt)
-    if (!sessionAnswer) return
-    hasApplied = true
-    await apply(pi, ctx, sessionAnswer, { ...DEFAULT_TIERS, ...config.tiers })
+    if (!hasApplied) {
+      sessionAnswer ??= await classify(ctx, event.prompt)
+      if (sessionAnswer) {
+        hasApplied = true
+        await apply(pi, ctx, sessionAnswer, { ...DEFAULT_TIERS, ...config.tiers })
+      }
+    }
+    const context = await routeFlow(ctx, event.prompt)
+    return context ? { message: { customType: 'jev-flow', content: context, display: false } } : undefined
   })
+}
+
+// `jevConfig` already proved `.lexi.json`: Jev names the flow and its order rides along as a hidden message.
+async function routeFlow(ctx: ExtensionContext, prompt: string): Promise<string | undefined> {
+  const key = jevApiKey(ctx.cwd)
+  if (!key || !isRoutable(prompt)) return undefined
+  const outcome = await postJev({ state: { prompt }, questions: FLOW_QUESTIONS }, key)
+  const answer = typeof outcome === 'string' ? outcome : parseFlow(outcome.body)
+  if (typeof answer === 'string') return undefined
+  return flowContext(answer.flow, answer.confidence, (name) => `/skill:lexi-${name}`)
 }
 
 async function apply(pi: ExtensionAPI, ctx: ExtensionContext, answer: Answer, tiers: Partial<Record<Tier, string>>): Promise<void> {
@@ -91,7 +106,7 @@ async function classify(ctx: ExtensionContext, prompt: string): Promise<Answer |
   const key = jevApiKey(ctx.cwd)
   if (!key) return warnOnce(ctx, 'TYPESAFE_API_KEY missing: put it under "env" in .claude/settings.local.json or export it in the shell. Router off.')
   const startedAt = Date.now()
-  const outcome = await askJev(prompt, key)
+  const outcome = await postJev({ state: { prompt }, questions: QUESTIONS }, key)
   if (typeof outcome === 'string') return warnOnce(ctx, `jev unavailable: ${outcome}, retrying on the next prompt`)
   const answer = parseAnswer(outcome.body, Date.now() - startedAt)
   if (typeof answer === 'string') return warnOnce(ctx, `jev unavailable: ${answer}, retrying on the next prompt`)
@@ -99,12 +114,12 @@ async function classify(ctx: ExtensionContext, prompt: string): Promise<Answer |
 }
 
 // Any failure (timeout, non-2xx, exception) becomes a string, never a throw.
-async function askJev(prompt: string, key: string): Promise<{ body: string } | string> {
+async function postJev(body: object, key: string): Promise<{ body: string } | string> {
   try {
     const response = await fetch(JEV_URL, {
       method: 'POST',
       headers: { authorization: `Bearer ${key}`, 'content-type': 'application/json' },
-      body: JSON.stringify({ model: JEV_MODEL, state: { prompt }, questions: QUESTIONS }),
+      body: JSON.stringify({ model: JEV_MODEL, ...body }),
       signal: AbortSignal.timeout(TIMEOUT_MS),
     })
     return response.ok ? { body: await response.text() } : `HTTP ${response.status}`

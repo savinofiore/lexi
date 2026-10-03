@@ -1,0 +1,7 @@
+{
+  "gate": "node --test test/",
+  "source": "src/",
+  "tests": "test/",
+  "test_suffix": ".test.js",
+  "testable": ["src/"]
+}

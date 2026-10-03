@@ -6,5 +6,5 @@
     "noEmit": true, "skipLibCheck": true,
     "jsx": "react", "jsxFactory": "h", "jsxFragmentFactory": "Fragment"
   },
-  "include": ["types", "hooks", "shared/router-policy.ts", "shared/compact-policy.ts"]
+  "include": ["types", "hooks", "shared/router-policy.ts", "shared/compact-policy.ts", "shared/flow-policy.test.ts"]
 }

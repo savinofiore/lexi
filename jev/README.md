@@ -36,6 +36,12 @@ skill of the same name, and `/review` needs its own file. Commit them so the tea
 to get the built-in review back. The project folder must be trusted, or Claude Code reads neither the project
 `env` nor its skills.
 
+The settings value alone is not enough yet. While Claude Code's plugin-hooks rollout is off server-side, the
+flag counts only in the environment of the `claude` process; the settings `env` is applied too late. Add
+`export CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1` to your shell profile (`~/.zshrc`, `~/.bashrc`) and open a new
+session; every teammate needs it. The debug log shows `hooks module jev@lexi not loaded` when it is missing.
+`review.py` does not use hooks, so the review works either way.
+
 Pi has no built-in code review, so there is nothing to replace: the skill is `/skill:jev-code-review`.
 
 **Pi** — jev ships inside the lexi package. `/skill:lexi-init` asks whether to enable it, which model to use
@@ -66,6 +72,13 @@ is Opus at a higher effort. A session is never put on haiku: it holds its model 
 at `fast`. On Pi subagent models are pinned by the subagent extension and left alone.
 
 You see `[jev-router] session: sonnet · effort medium` in the transcript and `jev · …` in the status line.
+
+**lexi flow.** In a project with `.lexi.json`, every prompt that is not a slash command also gets a second
+question, `bug`, `feature`, `open` or `none` (`shared/flow-policy.ts`). At confidence ≥ 0.6 the answer rides
+along as hidden context ordering the matching skill (`lexi:bug`, `lexi:feature`, `lexi:grill`), with a way out
+to `lexi:lexi` when it is clearly wrong; below 0.6 it only points at `lexi:lexi`; `none` adds nothing. Unlike
+the model, the flow is asked on every prompt: each prompt can be a new task. On Pi the same answer arrives as a
+hidden message. A Jev failure leaves the prompt as typed; lexi's own one-line session hint still applies.
 
 ## Compact
 
@@ -153,7 +166,7 @@ accept for that error, not a knob to tune on the last diff.
 ## Development
 
 ```sh
-CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1 claude plugin test jev   # router + compact, Claude Code
+CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1 claude plugin test jev   # router, flow, compact and shared/flow-policy, Claude Code
 claude plugin validate jev
 CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1 claude -p "/plugin-types jev/types" && npx -y -p typescript@5 tsc -p jev/tsconfig.json
 node --test pi/extensions/jev-compact/transcript.test.ts
@@ -166,5 +179,5 @@ A Claude Code plugin gets exactly one hooks module, and `register` must call `on
 
 ## Turning it off
 
-Claude Code: `/plugin uninstall jev@lexi`, or drop `CLAUDE_CODE_ENABLE_FUNCTION_HOOKS` from the project settings.
+Claude Code: `/plugin uninstall jev@lexi`, or drop `CLAUDE_CODE_ENABLE_FUNCTION_HOOKS` from the project settings and your shell.
 Pi: remove the `jev` object from `.lexi.json`. Either runtime, one machine only: remove `TYPESAFE_API_KEY` from `.claude/settings.local.json`.
