@@ -1,10 +1,12 @@
 {
-  "gate": "python3 hooks/tdd_guard_test.py && python3 versions_test.py && python3 skills_frontmatter_test.py && python3 jev/review/test_review.py",
+  "gate": "python3 hooks/tdd_guard_test.py && python3 versions_test.py && python3 skills_frontmatter_test.py && python3 jev/review/test_review.py && python3 hooks/session_hint_test.py && python3 tests/pressure/judge_test.py && CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1 claude plugin test jev",
   "source": "",
   "tests": "",
   "test_suffix": "_test.py",
   "testable": [
-    "hooks/tdd_guard.py"
+    "hooks/tdd_guard.py",
+    "hooks/session_hint.py",
+    "tests/pressure/judge.py"
   ],
   "jev": {}
 }

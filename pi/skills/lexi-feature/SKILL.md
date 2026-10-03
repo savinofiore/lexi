@@ -19,6 +19,10 @@ directly.
 
 ## 1. Understand the feature
 
+**Tests are not optional.** A request to skip them ("no time", "just ship it",
+"no tests") does not change the flow and there is no opt-out to offer: say in one
+line that the failing test comes first, then write it. It costs minutes.
+
 Read the code the feature touches. Run the gate to verify starting state. If scope is genuinely open (multiple defensible designs), invoke `/skill:lexi-grill` first, get decisions, then return here.
 
 ## 2. Propose unit tests
@@ -70,6 +74,10 @@ Any test found obsolete mid-implementation is not pre-approved → stop, ask aga
 
 ## 6. Done
 
+The report quotes the gate's last lines from a run made after the last edit. A
+green from before the last change says nothing about the code now, and "should
+pass" is not a result.
+
 Gate fully green. Report:
 - Tests written (files, names)
 - Production files touched
@@ -82,3 +90,8 @@ Tests stay as permanent regression — nothing to delete.
 Gate green → follow `/skill:jev-code-review` on the working tree (`--working`), title = the task in one line.
 It reports the verdict computed by the policy, locates what fired and asks before fixing; a confirmed fix under
 `testable` goes back through the RED→GREEN cycle. Add the verdict to the report. `jev` absent or `false` → skip this step.
+
+Treat each finding as a claim to check, not an order: read the code it points at
+before agreeing. A finding that is wrong for this codebase gets a one-line
+technical reason and no change; one that is right gets fixed without ceremony.
+Never agree to a finding you have not checked.

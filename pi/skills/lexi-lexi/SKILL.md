@@ -28,6 +28,10 @@ improvising.
 
 ## 1. Understand and route
 
+**Tests are not optional.** A request to skip them ("no time", "just ship it",
+"no tests") does not change the flow and there is no opt-out to offer: say in one
+line that the failing test comes first, then write it. It costs minutes.
+
 Read the code the task actually touches — the file, and the callers of anything
 you are about to change. Run the gate on the affected area to fix the starting
 state before proposing anything.
@@ -97,7 +101,8 @@ Stop and report. Do not push through:
   the production code is wrong — fix the code — or the expected behaviour is
   not what was agreed — ask. Never rewrite an assertion to chase green.
 - **Three attempts, same red, no progress.** Report the actual error and what
-  you have ruled out. Widening the diff until the assertion goes quiet is the
+  you have ruled out. If each attempt surfaced a new failure elsewhere, name the
+  design as the suspect rather than trying a fourth patch. Widening the diff until the assertion goes quiet is the
   failure this rule exists to prevent.
 - **Red for the wrong reason.** A setup or compile error is not a valid red.
   Fix the test before touching production code.
@@ -116,6 +121,10 @@ An assertion found "obsolete" mid-implementation is not covered by that
 agreement: stop and go back to step 2.
 
 ## 6. Done
+
+The report quotes the gate's last lines from a run made after the last edit. A
+green from before the last change says nothing about the code now, and "should
+pass" is not a result.
 
 Full gate green. Report the slices, the files touched, and what you left
 untested and why. The tests stay as permanent regression; there is nothing to

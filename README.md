@@ -194,7 +194,9 @@ the key is per project, so both runtimes share the one file.
 
 ## How it works
 
-Describe the task with `/lexi:lexi`. The router picks one of three paths:
+Describe the task with `/lexi:lexi`. The router picks one of three paths. You rarely have to type it: in a
+lexi project a one-line hint at session start points every code change at `/lexi:lexi`, and with Jev enabled
+each prompt is classified as bug, feature or open scope and sent straight to that skill.
 
 ```mermaid
 flowchart LR
@@ -562,7 +564,14 @@ prompt. If an old global key was shared, revoke it.
 python3 hooks/tdd_guard_test.py
 python3 skills_frontmatter_test.py   # every SKILL.md: valid frontmatter, name = folder
 python3 versions_test.py             # every copy of a plugin version matches
+python3 hooks/session_hint_test.py
+python3 tests/pressure/judge_test.py
 ```
+
+**Pressure tests** check the skill prose, not the code: each scenario in `tests/pressure/scenarios/` pushes a
+headless agent to break a rule (skip the red test, rewrite an assertion, guess a cause, claim done without the
+gate, obey a wrong review), and Jev judges the transcript. They cost a real session each, so they are not in the
+gate: run `python3 tests/pressure/run.py` (or `run.py 2 4`) after changing a skill. Needs `TYPESAFE_API_KEY`.
 
 jev's checks are in [jev/README.md](jev/README.md#development).
 
@@ -570,10 +579,11 @@ jev's checks are in [jev/README.md](jev/README.md#development).
 [CLAUDE.md](CLAUDE.md) for which fields). Pi follows git and is not affected.
 
 ```
-hooks/            guard script + tests (source of truth for both runtimes)
+hooks/            guard and session hint scripts + tests (source of truth for both runtimes)
+tests/pressure/   skill pressure scenarios, headless runner, Jev judge
 skills/           Claude Code skills (init, lexi, bug, feature, grill, tdd)
 .claude-plugin/   Claude Code plugin + marketplace manifests
-pi/extensions/    Pi extensions: guard (wraps hooks/tdd_guard.py), init, caveman, jev-router, jev-compact
+pi/extensions/    Pi extensions: guard (wraps hooks/tdd_guard.py), hint (wraps hooks/session_hint.py), init, caveman, jev-router, jev-compact
 pi/skills/        Pi skills (lexi-*, jev-code-review)
 jev/              jev Claude Code plugin; shared/ and review/ are imported by the Pi side too
 package.json      Pi package manifest (pi.extensions, pi.skills)

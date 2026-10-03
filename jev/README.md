@@ -73,6 +73,13 @@ at `fast`. On Pi subagent models are pinned by the subagent extension and left a
 
 You see `[jev-router] session: sonnet · effort medium` in the transcript and `jev · …` in the status line.
 
+**lexi flow.** In a project with `.lexi.json`, every prompt that is not a slash command also gets a second
+question, `bug`, `feature`, `open` or `none` (`shared/flow-policy.ts`). At confidence ≥ 0.6 the answer rides
+along as hidden context ordering the matching skill (`lexi:bug`, `lexi:feature`, `lexi:grill`), with a way out
+to `lexi:lexi` when it is clearly wrong; below 0.6 it only points at `lexi:lexi`; `none` adds nothing. Unlike
+the model, the flow is asked on every prompt: each prompt can be a new task. On Pi the same answer arrives as a
+hidden message. A Jev failure leaves the prompt as typed; lexi's own one-line session hint still applies.
+
 ## Compact
 
 Native compaction replaces the conversation with a summary, and paths, line numbers and exact errors can drift.
@@ -159,7 +166,7 @@ accept for that error, not a knob to tune on the last diff.
 ## Development
 
 ```sh
-CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1 claude plugin test jev   # router + compact, Claude Code
+CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1 claude plugin test jev   # router, flow, compact and shared/flow-policy, Claude Code
 claude plugin validate jev
 CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1 claude -p "/plugin-types jev/types" && npx -y -p typescript@5 tsc -p jev/tsconfig.json
 node --test pi/extensions/jev-compact/transcript.test.ts

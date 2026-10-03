@@ -88,6 +88,23 @@ how is free to change. Assert on the observable result instead.
 - **Shared mutable fixture** — order-dependent suites that pass alone and fail
   in CI. Each test builds what it needs.
 
+## Excuses that sound like reasons
+
+Each feels true in the moment; none changes what the test is for. When one is
+the reason you are about to skip a step, write the test instead.
+
+- *"Too simple to test."* Simple code still breaks, and its test is the cheapest.
+- *"I'll add the test after."* A test written after passes on its first run, so
+  it never proved it can fail.
+- *"I checked it by hand."* A manual check leaves nothing behind; the next change
+  undoes it unseen.
+- *"The test is wrong, not the code."* Maybe. Then it is a breaking change: agree
+  it first, never edit the assertion to reach green.
+- *"It's urgent."* An urgent fix that breaks again is two incidents; the red test
+  costs minutes.
+- *"The user said to skip it."* Not an option lexi offers: the test comes first
+  whoever asks.
+
 ## Coverage
 
 Coverage reports what was executed, never what was verified: a line run by a

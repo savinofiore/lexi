@@ -1,4 +1,5 @@
 import type { EngineInterface, EventName, Hook } from 'claude-code'
+import { flowContext, FLOW_QUESTIONS, isRoutable, parseFlow } from '../shared/flow-policy.ts'
 import type { Answer, Effort } from '../shared/router-policy.ts'
 import {
   aliasOfRank,
@@ -50,13 +51,28 @@ function resetSession($: EngineInterface) {
   if (SHOW_STATUS) $.ui.status(undefined)
 }
 
+// One hook per event: the model is chosen once per session, the lexi flow on every prompt.
 export async function onPromptSubmit($: EngineInterface, e: HookArgs<'prompt.submit'>[1], next: HookArgs<'prompt.submit'>[2]) {
-  if (sessionAnswer) {
-    $.ui.log('[jev-router] reusing the first prompt\'s choice', DEBUG)
-    return next(e)
+  if (sessionAnswer) $.ui.log('[jev-router] reusing the first prompt\'s choice', DEBUG)
+  // ponytail: sequential, so the first prompt can wait up to two Jev timeouts; run both at once if it shows.
+  else sessionAnswer = await classify($, 'prompt', { prompt: e.text })
+  const context = await routeFlow($, e.text)
+  return next(context ? { ...e, context: [...(e.context ?? []), context] } : e)
+}
+
+// In a lexi project (`.lexi.json` is the opt-in), Jev names the flow and its order rides along as context.
+async function routeFlow($: EngineInterface, prompt: string): Promise<string | undefined> {
+  if (!isRoutable(prompt) || !(await $.fs.read('.lexi.json').then(() => true, () => false))) return undefined
+  const key = await readApiKey($)
+  if (!key) return undefined
+  const outcome = await postJev($, { model: JEV_MODEL, state: { prompt }, questions: FLOW_QUESTIONS }, key)
+  const answer = typeof outcome === 'string' ? outcome : parseFlow(outcome.text)
+  if (typeof answer === 'string') {
+    $.ui.log(`[jev-flow] jev unavailable: ${answer}, no routing for this prompt`, DEBUG)
+    return undefined
   }
-  sessionAnswer = await classify($, 'prompt', { prompt: e.text })
-  return next(e)
+  $.ui.log(`[jev-flow] ${answer.flow} (${answer.confidence.toFixed(2)})`, DEBUG)
+  return flowContext(answer.flow, answer.confidence)
 }
 
 export async function* onTurnStep($: EngineInterface, e: HookArgs<'turn.step'>[1], next: HookArgs<'turn.step'>[2]) {
@@ -127,8 +143,13 @@ async function readApiKey($: EngineInterface): Promise<string | undefined> {
   return apiKey
 }
 
-// Any failure (timeout, non-2xx, bad JSON, exception) becomes a reason string, never a throw.
 async function askJev($: EngineInterface, state: Record<string, string>, key: string): Promise<Answer | string> {
+  const outcome = await postJev($, { model: JEV_MODEL, state, questions: QUESTIONS }, key)
+  return typeof outcome === 'string' ? outcome : parseAnswer(outcome.text, outcome.ms)
+}
+
+// Any failure (timeout, non-2xx, exception) becomes a reason string, never a throw.
+async function postJev($: EngineInterface, body: object, key: string): Promise<{ text: string; ms: number } | string> {
   const startedAt = await $.clock.now()
   const timer = new AbortController()
   const timeout = $.clock.sleep(TIMEOUT_MS, { signal: timer.signal }).then(() => 'timeout', () => 'timeout')
@@ -136,12 +157,11 @@ async function askJev($: EngineInterface, state: Record<string, string>, key: st
     .fetch(JEV_URL, {
       method: 'POST',
       headers: { authorization: `Bearer ${key}`, 'content-type': 'application/json' },
-      body: JSON.stringify({ model: JEV_MODEL, state, questions: QUESTIONS }),
+      body: JSON.stringify(body),
     })
     .then((response) => (response.ok ? response : `HTTP ${response.status}`), (error: unknown) => `error ${String(error)}`)
   const outcome = await Promise.race([request, timeout])
   timer.abort()
   if (typeof outcome === 'string') return outcome
-  return parseAnswer(outcome.text, (await $.clock.now()) - startedAt)
+  return { text: outcome.text, ms: (await $.clock.now()) - startedAt }
 }
-
