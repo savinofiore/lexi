@@ -17,7 +17,7 @@ import {
   tierRankOfModel,
   TIMEOUT_MS,
 } from '../../../jev/shared/router-policy.ts'
-import { flowContext, FLOW_QUESTIONS, isRoutable, parseFlow } from '../../../jev/shared/flow-policy.ts'
+import { flowContext, flowSkill, FLOW_QUESTIONS, isRoutable, parseFlow } from '../../../jev/shared/flow-policy.ts'
 import { jevApiKey, jevConfig } from '../../../jev/shared/pi-config.ts'
 import { resolveTarget } from './models.ts'
 
@@ -66,7 +66,10 @@ async function routeFlow(ctx: ExtensionContext, prompt: string): Promise<string 
   const outcome = await postJev({ state: { prompt }, questions: FLOW_QUESTIONS }, key)
   const answer = typeof outcome === 'string' ? outcome : parseFlow(outcome.body)
   if (typeof answer === 'string') return undefined
-  return flowContext(answer.flow, answer.confidence, (name) => `/skill:lexi-${name}`)
+  const skillOf = (name: string) => `/skill:lexi-${name}`
+  const skill = flowSkill(answer.flow, answer.confidence, skillOf)
+  if (skill) ctx.ui.notify(`[jev-flow] ${answer.flow} (${answer.confidence.toFixed(2)}) → ${skill}`, 'info')
+  return flowContext(answer.flow, answer.confidence, skillOf)
 }
 
 async function apply(pi: ExtensionAPI, ctx: ExtensionContext, answer: Answer, tiers: Partial<Record<Tier, string>>): Promise<void> {

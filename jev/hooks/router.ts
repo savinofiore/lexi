@@ -1,5 +1,5 @@
 import type { EngineInterface, EventName, Hook } from 'claude-code'
-import { flowContext, FLOW_QUESTIONS, isRoutable, parseFlow } from '../shared/flow-policy.ts'
+import { flowContext, flowSkill, FLOW_QUESTIONS, isRoutable, parseFlow } from '../shared/flow-policy.ts'
 import type { Answer, Effort } from '../shared/router-policy.ts'
 import {
   aliasOfRank,
@@ -71,7 +71,9 @@ async function routeFlow($: EngineInterface, prompt: string): Promise<string | u
     $.ui.log(`[jev-flow] jev unavailable: ${answer}, no routing for this prompt`, DEBUG)
     return undefined
   }
-  $.ui.log(`[jev-flow] ${answer.flow} (${answer.confidence.toFixed(2)})`, DEBUG)
+  // Shown like the router's line, so the person sees which skill Jev sent the prompt to; `none` stays in debug.
+  const skill = flowSkill(answer.flow, answer.confidence)
+  $.ui.log(`[jev-flow] ${answer.flow} (${answer.confidence.toFixed(2)})${skill ? ` → ${skill}` : ''}`, skill ? {} : DEBUG)
   return flowContext(answer.flow, answer.confidence)
 }
 

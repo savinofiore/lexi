@@ -80,6 +80,9 @@ to `lexi:lexi` when it is clearly wrong; below 0.6 it only points at `lexi:lexi`
 the model, the flow is asked on every prompt: each prompt can be a new task. On Pi the same answer arrives as a
 hidden message. A Jev failure leaves the prompt as typed; lexi's own one-line session hint still applies.
 
+Each routed prompt shows one line, `[jev-flow] bug (0.82) → lexi:bug` (or `→ lexi:lexi` below 0.6); `none`
+stays in the debug log.
+
 ## Compact
 
 Native compaction replaces the conversation with a summary, and paths, line numbers and exact errors can drift.

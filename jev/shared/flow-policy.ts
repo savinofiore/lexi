@@ -36,10 +36,19 @@ export const MIN_CONFIDENCE = 0.6
 const SKILL_OF: Record<Exclude<Flow, 'none'>, string> = { bug: 'bug', feature: 'feature', open: 'grill' }
 
 // `skillOf` names a skill for the runtime: `lexi:bug` on Claude Code, `lexi-bug` on Pi.
-export const flowContext = (flow: Flow, confidence: number, skillOf = (name: string) => `lexi:${name}`): string | undefined => {
+type SkillOf = (name: string) => string
+const LEXI_SKILL: SkillOf = (name) => `lexi:${name}`
+
+// The skill the flow sends a prompt to: its own when confident, lexi's router when not, none for `none`.
+export const flowSkill = (flow: Flow, confidence: number, skillOf = LEXI_SKILL): string | undefined => {
   if (flow === 'none') return undefined
-  if (confidence < MIN_CONFIDENCE) return `lexi flow (Jev): unsure (${flow}, ${confidence.toFixed(2)}). If this prompt asks for a code change, load the skill "${skillOf('lexi')}" first: it routes.`
-  const skill = skillOf(SKILL_OF[flow])
+  return skillOf(confidence < MIN_CONFIDENCE ? 'lexi' : SKILL_OF[flow])
+}
+
+export const flowContext = (flow: Flow, confidence: number, skillOf = LEXI_SKILL): string | undefined => {
+  const skill = flowSkill(flow, confidence, skillOf)
+  if (!skill) return undefined
+  if (confidence < MIN_CONFIDENCE) return `lexi flow (Jev): unsure (${flow}, ${confidence.toFixed(2)}). If this prompt asks for a code change, load the skill "${skill}" first: it routes.`
   return `lexi flow (Jev): ${flow}, confidence ${confidence.toFixed(2)}. Load the skill "${skill}" before anything else. If that is clearly wrong for this prompt, say why in one line and load "${skillOf('lexi')}" instead.`
 }
 
