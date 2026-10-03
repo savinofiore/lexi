@@ -127,7 +127,10 @@ project settings only in a trusted folder), then run `/lexi:init`.
   do not auto-update by default).
 - If you enable Jev:
   - `"jev": {}` in `.lexi.json`;
-  - `CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1` and `CLAUDE_AUTOCOMPACT_PCT_OVERRIDE=50` in `.claude/settings.json`;
+  - `CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1` and `CLAUDE_AUTOCOMPACT_PCT_OVERRIDE=50` in `.claude/settings.json`.
+    While Claude Code's plugin-hooks rollout is off server-side, the settings value is read too late: every
+    teammate also needs `export CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1` in their shell profile (`~/.zshrc`),
+    or the router stays off silently;
   - two project shims, `.claude/skills/code-review/` and `.claude/skills/review/`. A project skill replaces
     the built-in one with the same name, so `/code-review` and `/review` run Jev's review in that project.
     Delete the two folders to get the built-in review back.
@@ -491,7 +494,8 @@ if missing. Skipping this step is fine: the project keeps working as before, wit
 Before 0.9.0 the Jev key lived globally, in `~/.claude/settings.json` or a shell export, so every project
 used it. From 0.9.0 it lives per project in the gitignored `.claude/settings.local.json`. If you set up Jev
 with an older version, open `claude` in each project that uses Jev and paste this prompt. It removes the
-old key everywhere, updates lexi and leaves a placeholder for the new key:
+old key everywhere, updates lexi, enables the hooks flag in your shell and leaves a placeholder
+for the new key:
 
 ```text
 Remove the old, deprecated TypeSafe (Jev) key and update lexi. Fixed rules: never print a key value
@@ -506,9 +510,12 @@ at the first error and tell me what happened.
    and `claude plugin update jev@lexi`.
 3. In this project's .claude/settings.local.json set env.TYPESAFE_API_KEY to "PASTE_YOUR_KEY_HERE",
    keeping the rest of the file (create it if missing).
-4. Summary: what you removed (file:line only), lexi and jev versions after the update. Remind me to
-   paste the new key by hand into the file from step 3, fully quit the editor (Cmd+Q) and the
-   terminal, reopen them and restart claude.
+4. If my shell profile (~/.zshrc for zsh, ~/.bashrc for bash) has no
+   `export CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1` line, append it. It is a switch, not a key: Jev's
+   router stays off without it in the shell environment.
+5. Summary: what you removed (file:line only), whether you added the line from step 4, lexi and jev
+   versions after the update. Remind me to paste the new key by hand into the file from step 3,
+   fully quit the editor (Cmd+Q) and the terminal, reopen them and restart claude.
 ```
 
 Quitting the editor matters: editors built on VS Code read the shell environment once at launch and pass

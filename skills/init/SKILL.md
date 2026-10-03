@@ -133,6 +133,15 @@ Then write, merging into existing files and never overwriting other keys:
   `"CLAUDE_AUTOCOMPACT_PCT_OVERRIDE": "50"` (compaction runs earlier, so Jev
   prunes while the context is still cheap to rewrite).
 
+  The settings `env` is applied too late for the hooks-module gate: while
+  Claude Code's plugin-hooks rollout is off server-side, the flag counts only
+  in the environment of the `claude` process. Run
+  `echo $CLAUDE_CODE_ENABLE_FUNCTION_HOOKS`; if it is not `1`, tell the user
+  to add `export CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1` to their shell profile
+  (`~/.zshrc`, `~/.bashrc`) and restart. Each teammate needs it too. Without
+  it the router stays off silently; `review.py` does not use hooks and works
+  either way.
+
 - `.claude/skills/code-review/SKILL.md` and `.claude/skills/review/SKILL.md` —
   two project shims. A project skill replaces the built-in skill of the same
   name, and `/review` needs its own file, so in this project both commands run

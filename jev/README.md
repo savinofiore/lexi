@@ -36,6 +36,12 @@ skill of the same name, and `/review` needs its own file. Commit them so the tea
 to get the built-in review back. The project folder must be trusted, or Claude Code reads neither the project
 `env` nor its skills.
 
+The settings value alone is not enough yet. While Claude Code's plugin-hooks rollout is off server-side, the
+flag counts only in the environment of the `claude` process; the settings `env` is applied too late. Add
+`export CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1` to your shell profile (`~/.zshrc`, `~/.bashrc`) and open a new
+session; every teammate needs it. The debug log shows `hooks module jev@lexi not loaded` when it is missing.
+`review.py` does not use hooks, so the review works either way.
+
 Pi has no built-in code review, so there is nothing to replace: the skill is `/skill:jev-code-review`.
 
 **Pi** — jev ships inside the lexi package. `/skill:lexi-init` asks whether to enable it, which model to use
@@ -166,5 +172,5 @@ A Claude Code plugin gets exactly one hooks module, and `register` must call `on
 
 ## Turning it off
 
-Claude Code: `/plugin uninstall jev@lexi`, or drop `CLAUDE_CODE_ENABLE_FUNCTION_HOOKS` from the project settings.
+Claude Code: `/plugin uninstall jev@lexi`, or drop `CLAUDE_CODE_ENABLE_FUNCTION_HOOKS` from the project settings and your shell.
 Pi: remove the `jev` object from `.lexi.json`. Either runtime, one machine only: remove `TYPESAFE_API_KEY` from `.claude/settings.local.json`.
