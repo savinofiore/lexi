@@ -100,6 +100,32 @@ with tempfile.TemporaryDirectory() as repo:
                           env=dict(os.environ, PYTHONIOENCODING="cp1252"))
     assert proc.returncode == BLOCK and "città_😁" in proc.stderr.decode("utf-8"), proc.stderr
 
+def run_bash(repo, command):
+    return run(repo, "Bash", None, {"command": command})
+
+
+with tempfile.TemporaryDirectory() as repo:
+    setup(repo)
+    # Bash writes answer to the same rules as Write: a heredoc cannot create a source without its mirror
+    assert run_bash(repo, "cat > lib/models/order.dart <<'EOF'\nclass Order {}\nEOF") == BLOCK
+    # ...and with the mirror in place it is as free as Write
+    assert run_bash(repo, "echo 'class User {}' > lib/models/user.dart") == ALLOW
+    # sed -i on a tracked test rewrites it: blocked, BSD and GNU spellings alike
+    assert run_bash(repo, "sed -i '' 's/a/b/' test/models/user_test.dart") == BLOCK
+    assert run_bash(repo, "sed -i 's/a/b/' test/models/user_test.dart") == BLOCK
+    # appending to a tracked test is an insertion
+    assert run_bash(repo, "echo \"test('b', () {});\" >> test/models/user_test.dart") == ALLOW
+    # truncating it is a rewrite, released only by the allowlist
+    assert run_bash(repo, "echo x > test/models/user_test.dart") == BLOCK
+    write(repo, ".lexi/allow", "test/models/user_test.dart\n")
+    assert run_bash(repo, "echo x > test/models/user_test.dart") == ALLOW
+    os.remove(os.path.join(repo, ".lexi", "allow"))
+    # reading, running the gate, writing outside the perimeter: nothing to guard
+    assert run_bash(repo, "cat lib/models/user.dart && node --test 2>&1 | tail -5") == ALLOW
+    assert run_bash(repo, "echo x > /tmp/lexi-out.txt") == ALLOW
+    # every command of a chain is checked, tee included
+    assert run_bash(repo, "ls && make; gen | tee lib/models/order.dart") == BLOCK
+
 with tempfile.TemporaryDirectory() as repo:
     setup(repo, with_config=False)
     # no .lexi.json -> dormant, the project has not opted in

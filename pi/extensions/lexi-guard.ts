@@ -5,6 +5,8 @@ import { resolve } from "node:path";
 type ToolInput = Record<string, unknown>;
 
 const GUARD_PATH = resolve(__dirname, "../../hooks/tdd_guard.py");
+// Pi tool name -> the Claude Code name the guard speaks. Bash writes answer to the same rules.
+const TOOL_NAMES: Record<string, string> = { edit: "MultiEdit", write: "Write", bash: "Bash" };
 
 const asRecord = (value: unknown): ToolInput =>
   typeof value === "object" && value !== null ? value as ToolInput : {};
@@ -34,13 +36,12 @@ const legacyInput = (toolName: string, input: ToolInput): ToolInput => {
 
 export default function (pi: ExtensionAPI) {
   pi.on("tool_call", (event, ctx) => {
-    if (event.toolName !== "edit" && event.toolName !== "write") return;
+    if (!(event.toolName in TOOL_NAMES)) return;
 
     const input = asRecord(event.input);
-    const toolName = event.toolName === "edit" ? "MultiEdit" : "Write";
     const reason = runGuard({
-      tool_name: toolName,
-      tool_input: legacyInput(event.toolName, input),
+      tool_name: TOOL_NAMES[event.toolName],
+      tool_input: event.toolName === "bash" ? { command: input.command } : legacyInput(event.toolName, input),
       cwd: ctx.cwd,
     });
     if (reason) return { block: true, reason };

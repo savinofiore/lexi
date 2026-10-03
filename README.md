@@ -295,7 +295,9 @@ lexi router <task>
 
 ## The guard
 
-A hook (Claude Code) or extension (Pi) checks every edit once `.lexi.json` exists. No command needed.
+A hook (Claude Code) or extension (Pi) checks every edit once `.lexi.json` exists. No command needed. Shell
+commands are checked too, for the files they write through `>`, `>>`, `tee` or `sed -i` (an append counts as
+adding a test, `>` and `sed -i` as rewriting one).
 
 | Rule | Why |
 |---|---|
@@ -549,8 +551,9 @@ prompt. If an old global key was shared, revoke it.
 
 ## Known limits
 
-- The guard matches `Edit`/`Write`/`MultiEdit`/`NotebookEdit` (Claude Code) and `edit`/`write` (Pi). Writes
-  through the shell (`sed -i`, heredocs) walk past it.
+- The guard matches `Edit`/`Write`/`MultiEdit`/`NotebookEdit`/`Bash` (Claude Code) and `edit`/`write`/`bash`
+  (Pi). In a shell command it reads `>`, `>>`, `tee` and `sed -i` with a regex, not a shell parser: `cp`, `mv`,
+  `python -c` and paths held in variables still walk past it.
 - "Rewrite vs append" is substring containment, not a real diff. A hand-crafted edit could fool it.
 - The guard is friction plus an audit trail, not a wall. An agent can write `.lexi/allow` itself: the skill
   says to ask first, and the file records what was released.
