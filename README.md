@@ -115,18 +115,15 @@ Claude Code merges its `env` into every hook and command. Check that git ignores
 **4. Opt the project in.** Open `claude` in the project folder, accept the trust prompt (Claude Code reads
 project settings only in a trusted folder), then run `/lexi:init`.
 
-**5. Mods (optional).** `lexi-mods` adds UI on top of lexi: a usage row above the prompt (model, context,
+**5. Interface (optional).** lexi (since 0.12.0, replacing `lexi-mods`) adds UI: a usage row above the prompt (the model and effort the Jev router chose, context,
 5h and weekly rate-limit bars that warm as they fill, with the time to reset, tokens and cost), so a
 `statusLine` command is no longer needed; `lexi:GREEN`/`lexi:RED` in the status line and the
 last gate run above the prompt, a toast when the guard blocks an edit, and the running subagents above the
 prompt, one color per type, at any terminal width. A pane opens each one onto its tool calls, answer, duration
 and tokens: on the first spawn when the terminal is wide enough (144 columns, 110 once you opened it),
-`/lexi-mods:agents` at any time. Needs
-`CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1`, as jev does.
-
-```
-/plugin install lexi-mods@lexi
-```
+`/lexi:agents` at any time. Needs
+`CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1`, as the Jev layer does. Coming from `jev` or `lexi-mods`:
+`/plugin uninstall jev@lexi`, `/plugin uninstall lexi-mods@lexi`, then update lexi.
 
 </details>
 
@@ -362,7 +359,7 @@ the agent stops and asks. `.lexi/allow` is per-task scratch, gitignored by `init
 | `/lexi:feature <task>` | `/skill:lexi-feature <task>` | A feature with clear scope |
 | `/lexi:grill <task>` | `/skill:lexi-grill <task>` | A feature with open scope (feature can call it) |
 | `/lexi:tdd` | `/skill:lexi-tdd` | Reference: seams, assertions, mocking, anti-patterns |
-| `/jev:code-review` | `/skill:jev-code-review` | Jev review of the working tree, a ref, a PR or a diff |
+| `/lexi:code-review` | `/skill:jev-code-review` | Jev review of the working tree, a ref, a PR or a diff |
 
 With Jev on, Claude Code's `/code-review` and `/review` also route to Jev, and the flows call the review on
 their own after the last GREEN. On Claude Code, `code-review` ships in the separate `jev` plugin; on Pi all
@@ -523,8 +520,7 @@ at the first error and tell me what happened.
    .claude/settings.local.json, and `export TYPESAFE_API_KEY=` lines in ~/.zshrc, ~/.zprofile,
    ~/.bashrc, ~/.bash_profile and ~/.profile. Touch nothing else in those files. If you cannot edit
    ~/.claude/settings.json (Self-Modification block), tell me what to remove and I will do it by hand.
-2. Update the plugins: `claude plugin marketplace update lexi`, then `claude plugin update lexi@lexi`
-   and `claude plugin update jev@lexi`.
+2. Update the plugins: `claude plugin marketplace update lexi`, then `claude plugin update lexi@lexi`.
 3. In this project's .claude/settings.local.json set env.TYPESAFE_API_KEY to "PASTE_YOUR_KEY_HERE",
    keeping the rest of the file (create it if missing).
 4. If my shell profile (~/.zshrc for zsh, ~/.bashrc for bash) has no
@@ -553,7 +549,7 @@ prompt. If an old global key was shared, revoke it.
 | **[pi-subagents](https://www.npmjs.com/package/pi-subagents)** | Pi only, optional: the gate in an isolated subagent | `pi list` |
 | **`TYPESAFE_API_KEY`** | jev only, optional | [jev requirements](jev/README.md#requirements) |
 | **Claude Code ≥ 2.1.276** | jev's router and compaction hooks | `claude --version` |
-| **Claude Code ≥ 2.1.296** | lexi-mods, optional | `claude --version` |
+| **Claude Code ≥ 2.1.296** | the interface, optional | `claude --version` |
 
 > [!WARNING]
 > Without Python every guarded edit fails instead of being checked. macOS and most Linux distributions
@@ -628,7 +624,6 @@ CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1 claude --plugin-dir /absolute/path/to/lexi/j
 Back to GitHub:
 
 ```
-/plugin uninstall jev@lexi
 /plugin uninstall lexi@lexi
 /plugin marketplace remove lexi
 /plugin marketplace add savinofiore/lexi

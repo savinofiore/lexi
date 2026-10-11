@@ -3,11 +3,11 @@ import type { EngineInterface, Hook, MatchedHook } from 'claude-code'
 import type { AgentRun } from '../types'
 import { colorOf } from './palette.ts'
 
-export const PANE = 'lexi-mods-agents' as const
+export const PANE = 'lexi-agents' as const
 const TITLE = 'Subagents'
 
-const agents = atom({ plugin: 'lexi-mods', key: 'agents' } as const, [])
-const selected = atom({ plugin: 'lexi-mods', key: 'selected' } as const, null)
+const agents = atom({ plugin: 'lexi', key: 'agents' } as const, [])
+const selected = atom({ plugin: 'lexi', key: 'selected' } as const, null)
 
 // shortcut: keeps the last 50 subagents of the session; raise it if a long session needs more.
 const KEEP = 50

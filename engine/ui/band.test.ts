@@ -8,6 +8,7 @@ const BAND = { component: 'AbovePrompt', props: { hasSurvey: false, isWorking: f
 
 // A lexi project whose gate takes 3.4s and passes; spawns get agent-1, agent-2, ...; status and panes go nowhere.
 const setupWorld = (on: On) => {
+  mock.env(on, {}) // the router shares the agent.spawn event and asks for its key
   const clock = mock.clock(on)
   let spawned = 0
   on('agent.spawn', async (_$, e) => ({ model: e.parentModel, agentId: `agent-${++spawned}` }))
@@ -25,10 +26,10 @@ const spawn = (subagentType: string) => ({
   provider: { plugin: 'engine', tier: 'core' as const }, parentModel: 'claude-opus-5-5', background: false, fork: false,
 })
 
-const mountBand = ($: Engine) => $.ui.mount({ plugin: 'lexi-mods', surface: 'terminal', ...BAND })
+const mountBand = ($: Engine) => $.ui.mount({ plugin: 'lexi', surface: 'terminal', ...BAND })
 
 const bandText = async ($: Engine) => {
-  const ui = await $.ui.mount({ plugin: 'lexi-mods', surface: 'terminal', ...BAND })
+  const ui = await $.ui.mount({ plugin: 'lexi', surface: 'terminal', ...BAND })
   const found = await ui.findAll({ type: 'Text' })
   await ui.unmount()
   return found.map((text) => text.text).join('')

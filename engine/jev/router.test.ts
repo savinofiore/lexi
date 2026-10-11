@@ -20,6 +20,7 @@ const setupWorld = (on: On, hasKey: boolean, reply: Reply) => {
   const seen = { jevCalls: 0, logs: [] as string[], steps: [] as { model: string; effort: unknown }[], spawns: [] as (string | undefined)[] }
   on('ui.log', async (_$, e) => (seen.logs.push(e.text), { value: undefined }))
   on('ui.status', async () => ({ value: undefined }))
+  on('ui.open', async () => ({ value: { isPlaced: true } })) // the interface shares agent.spawn
   on('http.fetch', async () => ({ value: await reply(++seen.jevCalls) }))
   on('session.start', async (_$, e) => ({ cwd: e.cwd }))
   on('prompt.submit', async (_$, e) => ({ text: e.text }))

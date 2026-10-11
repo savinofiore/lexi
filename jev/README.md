@@ -26,7 +26,7 @@ flows.
 
 ## Install and opt in
 
-**Claude Code** — jev is a dependency of lexi (since 0.4.0): installing `lexi@lexi` installs it. Older installs: `/plugin install jev@lexi`. Then run `/lexi:init` in the project.
+**Claude Code** — the Jev layer ships inside lexi (since 0.12.0): installing `lexi@lexi` installs it, and the standalone `jev` plugin is a deprecation stub (`/plugin uninstall jev@lexi`). Then run `/lexi:init` in the project.
 
 `init` asks whether to enable Jev and, on yes, writes `"jev": {}` in `.lexi.json` (the review step) and, in the
 project's `.claude/settings.json`, `CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1` (the hooks module stays off without it)
@@ -39,7 +39,7 @@ to get the built-in review back. The project folder must be trusted, or Claude C
 The settings value alone is not enough yet. While Claude Code's plugin-hooks rollout is off server-side, the
 flag counts only in the environment of the `claude` process; the settings `env` is applied too late. Add
 `export CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1` to your shell profile (`~/.zshrc`, `~/.bashrc`) and open a new
-session; every teammate needs it. The debug log shows `hooks module jev@lexi not loaded` when it is missing.
+session; every teammate needs it. The debug log shows `hooks module lexi@lexi not loaded` when it is missing.
 `review.py` does not use hooks, so the review works either way.
 
 Pi has no built-in code review, so there is nothing to replace: the skill is `/skill:jev-code-review`.
@@ -116,7 +116,7 @@ checks feed (BLOCK first: tests, secret-looking files), then the rest; lockfiles
 tooling (`drop_first_patterns`) go last. Past `max_parts` (32) the rest is omitted, the JSON says so
 (`omitted_files`, `suspended_checks`) and the rules on `higher_is_better` checks (`adds_tests`,
 `description_matches`) are suspended: absence is not provable on a partial diff. Every merged number remembers
-the part that produced it: the handoff's `files` for that check come from that part only. From an agent: `/jev:code-review` (Claude Code; `/code-review` and `/review` too in a project `init` set up) or
+the part that produced it: the handoff's `files` for that check come from that part only. From an agent: `/lexi:code-review` (Claude Code; `/code-review` and `/review` too in a project `init` set up) or
 `/skill:jev-code-review` (Pi).
 
 | File | Holds |
@@ -170,7 +170,7 @@ accept for that error, not a knob to tune on the last diff.
 ## Development
 
 ```sh
-CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1 claude plugin test jev   # router, flow, compact and shared/flow-policy, Claude Code
+CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1 claude plugin test .   # router, flow, compact, shared/flow-policy and the interface, Claude Code
 claude plugin validate jev
 CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1 claude -p "/plugin-types jev/types" && npx -y -p typescript@5 tsc -p jev/tsconfig.json
 node --test pi/extensions/jev-compact/transcript.test.ts
@@ -183,5 +183,5 @@ A Claude Code plugin gets exactly one hooks module, and `register` must call `on
 
 ## Turning it off
 
-Claude Code: `/plugin uninstall jev@lexi`, or drop `CLAUDE_CODE_ENABLE_FUNCTION_HOOKS` from the project settings and your shell.
+Claude Code: `/plugin uninstall lexi@lexi`, or drop `CLAUDE_CODE_ENABLE_FUNCTION_HOOKS` from the project settings and your shell.
 Pi: remove the `jev` object from `.lexi.json`. Either runtime, one machine only: remove `TYPESAFE_API_KEY` from `.claude/settings.local.json`.

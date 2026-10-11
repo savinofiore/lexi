@@ -1,7 +1,7 @@
 import { atom, update } from 'claude-code'
 import type { EngineInterface, MatchedHook } from 'claude-code'
 
-const lastGate = atom({ plugin: 'lexi-mods', key: 'lastGate' } as const, null)
+const lastGate = atom({ plugin: 'lexi', key: 'lastGate' } as const, null)
 
 // The first line of lexi's guard refusal (hooks/tdd_guard.py): `lexi — edit to `x` BLOCKED.`
 const GUARD_LINE = /^lexi — .* BLOCKED\.$/m

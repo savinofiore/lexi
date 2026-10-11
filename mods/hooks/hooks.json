@@ -1,1 +1,15 @@
-{ "modules": ["./index.ts"] }
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo 'lexi-mods is now part of lexi 0.12.0 and later: install lexi@lexi and uninstall lexi-mods@lexi.'",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}

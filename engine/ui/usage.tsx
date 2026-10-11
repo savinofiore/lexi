@@ -4,8 +4,8 @@ import type { Usage } from '../types'
 
 export type Elements = ReturnType<EngineInterface['ui']['resolve']>
 
-const usage = atom({ plugin: 'lexi-mods', key: 'usage' } as const, null)
-const turnModel = atom({ plugin: 'lexi-mods', key: 'turnModel' } as const, null)
+const usage = atom({ plugin: 'lexi', key: 'usage' } as const, null)
+const routing = atom({ plugin: 'lexi', key: 'routing' } as const, null)
 
 // The usage gauges warm as a window fills.
 export const GREEN = '#81c784'
@@ -69,18 +69,10 @@ export const usageRow = (ui: Elements, now: Usage, at: number) => {
 
 // The engine's own status-line figures, pushed after each turn and on each rate-limit move.
 export const onMeasure: Hook<'session.measure'> = async ($, e, next) => {
-  const model = (await read($, turnModel)) ?? (await $.session.model())
+  const routed = await read($, routing)
+  // The router swaps the model per step, so the session's own model is not the one answering.
+  const model = routed === null ? await $.session.model() : `${routed.model} · ${routed.effort}`
   const { tokens, percent } = e.context
   await update($, usage, () => ({ model, context: { tokens, percent }, rateLimits: [...e.rateLimits], usd: e.cost?.usd }))
   return next(e)
-}
-
-// A router (jev) swaps the model per step, so the session's own model is not the one answering: show the step's.
-// shortcut: stays after /clear until the next step, reset on session.start if it shows.
-export const onTurnStep: Hook<'turn.step'> = async function* ($, e, next) {
-  if (e.agentId === undefined) {
-    await update($, turnModel, () => e.model)
-    await update($, usage, (now) => (now === null ? null : { ...now, model: e.model }))
-  }
-  return yield* next(e)
 }

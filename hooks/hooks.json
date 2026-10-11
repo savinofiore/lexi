@@ -24,5 +24,8 @@
         ]
       }
     ]
-  }
+  },
+  "modules": [
+    "../engine/index.ts"
+  ]
 }

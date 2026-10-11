@@ -4,7 +4,7 @@ import type { Engine } from 'claude-code/testing'
 import { colorOf } from './palette.ts'
 
 const PANE = {
-  component: 'Pane', requestId: 'lexi-mods-agents',
+  component: 'Pane', requestId: 'lexi-agents',
   props: { title: 'Subagents', isFocused: true, bodyColumns: 60, placement: 'dock', scroll: { offset: 0, bodyRows: 30 }, view: {} },
 } as const
 
@@ -12,6 +12,7 @@ const PANE = {
 // command says `fail`; what the plugin opened is recorded.
 const setupWorld = (on: On) => {
   const clock = mock.clock(on)
+  mock.env(on, {}) // the router shares the agent.spawn event and asks for its key
   const seen = { opened: [] as string[], spawned: 0 }
   on('ui.open', async (_$, e) => (seen.opened.push(e.id), { value: { isPlaced: true } }))
   on('ui.render', async () => ({ type: 'Box', props: {}, children: [] }))
@@ -38,7 +39,7 @@ const finish = (agentId: string, answer: string) => ({
 // A call made inside a subagent's loop: the engine stamps agentId there, a plugin's own call cannot.
 const inAgent = (agentId: string, command: string) => ({ tool: 'Bash', command, agentId }) as unknown as Parameters<Engine['tool']['call']>[0]
 
-const mountPane = ($: Engine) => $.ui.mount({ plugin: 'lexi-mods', surface: 'terminal', ...PANE })
+const mountPane = ($: Engine) => $.ui.mount({ plugin: 'lexi', surface: 'terminal', ...PANE })
 
 describe('agents', () => {
   test('a spawned subagent is listed as running, colored by its type', async ($, on) => {
@@ -71,14 +72,14 @@ describe('agents', () => {
     const { seen } = setupWorld(on)
     await $.agent.spawn(spawn('Explore'))
     await $.agent.spawn(spawn('Plan'))
-    expect(seen.opened).toEqual(['lexi-mods-agents'])
+    expect(seen.opened).toEqual(['lexi-agents'])
   })
 
   test('the agents command opens the pane', async ($, on) => {
     const { seen } = setupWorld(on)
     await $.session.start({ cwd: '/p', surface: null, isInteractive: true })
     await $.command.run({ command: 'agents', args: '', origin: { kind: 'composer' }, presentation: { isFullscreen: true, columns: 160 } })
-    expect(seen.opened).toEqual(['lexi-mods-agents'])
+    expect(seen.opened).toEqual(['lexi-agents'])
   })
 
   test('pressing a subagent opens its answer, back returns to the list', async ($, on) => {

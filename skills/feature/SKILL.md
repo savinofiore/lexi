@@ -79,7 +79,7 @@ Tests stay as permanent regression — nothing to delete.
 
 ## 7. Jev review — only if `.lexi.json` → `jev` is an object
 
-Gate green → invoke the `jev:code-review` skill on the working tree (`--working`), title = the task in one
+Gate green → invoke the `lexi:code-review` skill on the working tree (`--working`), title = the task in one
 line. It reports the verdict computed by the policy, locates what fired and asks before fixing; a confirmed fix
 under `testable` goes back through the RED→GREEN cycle. Add the verdict to the report. `jev` absent or `false`, or the
 jev plugin not installed → skip this step.

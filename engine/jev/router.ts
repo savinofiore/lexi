@@ -1,6 +1,7 @@
+import { atom, update } from 'claude-code'
 import type { EngineInterface, EventName, Hook } from 'claude-code'
-import { flowContext, flowSkill, FLOW_QUESTIONS, isRoutable, parseFlow } from '../shared/flow-policy.ts'
-import type { Answer, Effort } from '../shared/router-policy.ts'
+import { flowContext, flowSkill, FLOW_QUESTIONS, isRoutable, parseFlow } from '../../jev/shared/flow-policy.ts'
+import type { Answer, Effort } from '../../jev/shared/router-policy.ts'
 import {
   aliasOfRank,
   causeOf,
@@ -19,12 +20,15 @@ import {
   TIER_ALIAS,
   tierRankOfModel,
   TIMEOUT_MS,
-} from '../shared/router-policy.ts'
+} from '../../jev/shared/router-policy.ts'
 
 // Claude Code side only: thresholds and questions live in shared/router-policy.ts, shared with Pi.
 const SHOW_STATUS = true
 const MODEL_ID: Record<string, string> = { sonnet: 'claude-sonnet-5-5', opus: 'claude-opus-5-5' }
 const DEBUG = { to: 'debug' } as const
+
+// The usage row reads this: the model and effort the router settled on, since the session's own are not the ones answering.
+const routing = atom({ plugin: 'lexi', key: 'routing' } as const, null)
 
 type HookArgs<N extends EventName> = Parameters<Hook<N>>
 type Plan = { fromModel: string; fromEffort: unknown; model?: string; effort?: Effort }
@@ -36,18 +40,19 @@ let hasWarnedUnavailable = false
 
 // session.start does not fire on /clear (session.end with reason 'clear' does): reset on both.
 export async function onSessionStart($: EngineInterface, e: HookArgs<'session.start'>[1], next: HookArgs<'session.start'>[2]) {
-  resetSession($)
+  await resetSession($)
   return next(e)
 }
 
 export async function onSessionEnd($: EngineInterface, e: HookArgs<'session.end'>[1], next: HookArgs<'session.end'>[2]) {
-  resetSession($)
+  await resetSession($)
   return next(e)
 }
 
-function resetSession($: EngineInterface) {
+async function resetSession($: EngineInterface) {
   sessionAnswer = undefined
   sessionPlan = undefined
+  await update($, routing, () => null)
   if (SHOW_STATUS) $.ui.status(undefined)
 }
 
@@ -79,7 +84,10 @@ async function routeFlow($: EngineInterface, prompt: string): Promise<string | u
 
 export async function* onTurnStep($: EngineInterface, e: HookArgs<'turn.step'>[1], next: HookArgs<'turn.step'>[2]) {
   if (e.agentId !== undefined || !sessionAnswer) return yield* next(e)
-  sessionPlan ??= startSessionPlan($, sessionAnswer, e.model, e.effort)
+  if (!sessionPlan) {
+    sessionPlan = startSessionPlan($, sessionAnswer, e.model, e.effort)
+    await update($, routing, () => ({ model: shortModel(sessionPlan?.model ?? e.model), effort: String(sessionPlan?.effort ?? e.effort ?? 'default') }))
+  }
   const isModelOurs = sessionPlan.model && e.model === sessionPlan.fromModel
   const isEffortOurs = sessionPlan.effort && e.effort === sessionPlan.fromEffort
   return yield* next({
