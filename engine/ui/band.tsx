@@ -1,6 +1,7 @@
 import { atom, read } from 'claude-code'
 import type { MatchedHook } from 'claude-code'
 import type { AgentRun, GateRun } from '../types'
+import { hasFailedStep, stepsOf } from './agents.tsx'
 import { usageRow } from './usage.tsx'
 import type { Elements } from './usage.tsx'
 
@@ -23,7 +24,7 @@ const gateRow = (ui: Elements, run: GateRun, age: number) => (
 
 const agentsRow = (ui: Elements, running: readonly AgentRun[]) => (
   <ui.Box>
-    {running.slice(0, SHOWN).map((run) => <ui.Text color={run.color}>● {run.label} </ui.Text>)}
+    {running.slice(0, SHOWN).map((run) => <ui.Text color={run.color}>{hasFailedStep(run) ? '✗' : '●'} {run.label} · {stepsOf(run)} </ui.Text>)}
     {running.length > SHOWN && <ui.Text dimColor>+{running.length - SHOWN} more</ui.Text>}
   </ui.Box>
 )

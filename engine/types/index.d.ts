@@ -10,6 +10,7 @@ export type AgentRun = {
   label: string
   color: string
   description: string
+  model?: string
   isDone: boolean
   steps: AgentStep[]
   durationMs?: number

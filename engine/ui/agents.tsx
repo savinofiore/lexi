@@ -1,6 +1,7 @@
 import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Hook, MatchedHook } from 'claude-code'
 import type { AgentRun } from '../types'
+import { shortModel } from '../../jev/shared/router-policy.ts'
 import { colorOf } from './palette.ts'
 
 export const PANE = 'lexi-agents' as const
@@ -12,8 +13,11 @@ const selected = atom({ plugin: 'lexi', key: 'selected' } as const, null)
 // shortcut: keeps the last 50 subagents of the session; raise it if a long session needs more.
 const KEEP = 50
 
-const startRun = (list: readonly AgentRun[], id: string, type: string, description: string): AgentRun => ({
+type Spawned = { id: string; type: string; description: string; model?: string }
+
+const startRun = (list: readonly AgentRun[], { id, type, description, model }: Spawned): AgentRun => ({
   id, type, description,
+  ...(model === undefined ? {} : { model: shortModel(model) }),
   label: `${type} #${list.filter((run) => run.type === type).length + 1}`,
   color: colorOf(type),
   isDone: false,
@@ -27,7 +31,7 @@ export const onAgentSpawn: Hook<'agent.spawn'> = async ($, e, next) => {
   const isFirst = (await read($, agents)).length === 0
   // Not awaited: on a narrow terminal the engine holds an unasked pane until there is room.
   if (isFirst) void $.ui.open({ id: PANE, title: TITLE })
-  await update($, agents, (list) => [...list, startRun(list, id, e.subagentType, e.description)].slice(-KEEP))
+  await update($, agents, (list) => [...list, startRun(list, { id, type: e.subagentType, description: e.description, model: started.model })].slice(-KEEP))
   return started
 }
 
@@ -66,6 +70,12 @@ export const onTurnComplete: Hook<'turn.complete'> = async ($, e, next) => {
   return done
 }
 
+export const stepsOf = (run: AgentRun): string => `${run.steps.length} step${run.steps.length === 1 ? '' : 's'}`
+
+// A failed step outranks the run's own state: that is what a glance at the list should catch.
+export const hasFailedStep = (run: AgentRun): boolean => run.steps.some((step) => step.isError)
+const glyphOf = (run: AgentRun): string => (hasFailedStep(run) ? '✗' : run.isDone ? '✓' : '▶')
+
 const statusOf = (run: AgentRun): string =>
   run.isDone ? `done · ${((run.durationMs ?? 0) / 1000).toFixed(1)}s · ${run.tokens ?? 0} tok` : 'running'
 
@@ -75,9 +85,9 @@ type Select = (id: string | null) => Promise<unknown>
 const listView = (ui: Elements, list: readonly AgentRun[], select: Select) => (
   <ui.Box flexDirection="column">
     {list.length === 0 && <ui.Text dimColor>No subagents yet.</ui.Text>}
-    {list.map((run) => (
+    {[...list.filter((run) => !run.isDone), ...list.filter((run) => run.isDone)].map((run) => (
       <ui.Box>
-        <ui.Text color={run.color}>{run.label} · {statusOf(run)} · {run.description} </ui.Text>
+        <ui.Text color={run.color}>{glyphOf(run)} {run.label} · {run.model === undefined ? '' : `${run.model} · `}{statusOf(run)} · {stepsOf(run)} · {run.description} </ui.Text>
         <ui.Button key={run.id} label="open" onPress={() => select(run.id)} />
       </ui.Box>
     ))}

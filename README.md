@@ -117,8 +117,8 @@ project settings only in a trusted folder), then run `/lexi:init`.
 **5. Interface (optional).** With `CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1` lexi also draws, above the prompt:
 the model and effort the Jev router chose, context and rate-limit bars with time to reset, tokens and cost
 (no `statusLine` command needed); `lexi:GREEN`/`lexi:RED` and the last gate run; a toast when the guard
-blocks an edit; and the running subagents, one color per type. `/subagents` opens a pane onto each one's
-tool calls, answer, duration and tokens.
+blocks an edit; and the running subagents, one color per type, with their step count and ✗ after a failed step. `/subagents`
+opens a pane that lists them (running first, with the model each runs on, ▶/✓/✗ and its steps) and opens each onto its tool calls, answer, duration and tokens.
 
 </details>
 
