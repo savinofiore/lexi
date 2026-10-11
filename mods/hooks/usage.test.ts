@@ -12,6 +12,9 @@ const setupWorld = (on: On) => {
   on('session.model', async () => ({ value: 'Opus 5.5' }))
   on('session.measure', async (_$, e) => ({ changed: e.changed }))
   on('ui.status', async () => ({ value: undefined }))
+  on('turn.step', async function* (_$, e) {
+    return { turnId: e.turnId, index: e.index, answer: '', toolUses: [], stopReason: null, usage: null }
+  })
   on('ui.render', async () => ({ type: 'Box', props: {}, children: [] }))
 }
 
@@ -38,6 +41,12 @@ const barColor = async ($: Engine, label: string) => {
   await ui.unmount()
   const at = texts.findIndex((text) => text.text.trim() === label)
   return texts.slice(at).find((text) => text.text.includes('█'))?.props.color
+}
+
+const step = (model: string, agentId?: string) => ({ turnId: 't1', index: 0, model, messageCount: 1, ...(agentId ? { agentId } : {}) })
+
+const drain = async (stream: AsyncIterable<unknown>) => {
+  for await (const chunk of stream) void chunk
 }
 
 describe('usage row', () => {
@@ -88,5 +97,23 @@ describe('usage row', () => {
   test('before any measure the band draws nothing of its own', async ($, on) => {
     setupWorld(on)
     expect(await bandText($)).toBe('')
+  })
+
+  test('the row shows the model a step runs on, not the session model, and a later measure keeps it', async ($, on) => {
+    setupWorld(on)
+    await $.session.measure(measure(10))
+    await drain($.turn.step(step('claude-sonnet-5-5')))
+    expect(await bandText($)).toContain('claude-sonnet-5-5')
+    await $.session.measure(measure(20))
+    const text = await bandText($)
+    expect(text).toContain('claude-sonnet-5-5')
+    expect(text).not.toContain('Opus 5.5')
+  })
+
+  test('a subagent step does not change the model shown', async ($, on) => {
+    setupWorld(on)
+    await $.session.measure(measure(10))
+    await drain($.turn.step(step('claude-haiku-5-5', 'agent-1')))
+    expect(await bandText($)).toContain('Opus 5.5')
   })
 })

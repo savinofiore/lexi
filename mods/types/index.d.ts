@@ -27,6 +27,6 @@ export type Usage = {
 
 declare module 'claude-code' {
   interface PluginState {
-    'lexi-mods': { lastGate: GateRun | null; agents: AgentRun[]; selected: string | null; usage: Usage | null }
+    'lexi-mods': { lastGate: GateRun | null; agents: AgentRun[]; selected: string | null; usage: Usage | null; turnModel: string | null }
   }
 }
