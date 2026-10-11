@@ -116,9 +116,10 @@ Claude Code merges its `env` into every hook and command. Check that git ignores
 project settings only in a trusted folder), then run `/lexi:init`.
 
 **5. Mods (optional).** `lexi-mods` adds UI on top of lexi: `lexi:GREEN`/`lexi:RED` in the status line and the
-last gate run above the prompt, a toast when the guard blocks an edit, and a pane of the session's subagents,
-one color per type, each opening onto its tool calls, answer, duration and tokens. The pane opens on the first
-spawn when the terminal is wide enough; `/lexi-mods:agents` opens it at any time. Needs
+last gate run above the prompt, a toast when the guard blocks an edit, and the running subagents above the
+prompt, one color per type, at any terminal width. A pane opens each one onto its tool calls, answer, duration
+and tokens: on the first spawn when the terminal is wide enough (144 columns, 110 once you opened it),
+`/lexi-mods:agents` at any time. Needs
 `CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1`, as jev does.
 
 ```

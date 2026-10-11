@@ -52,7 +52,7 @@
       "name": "lexi-mods",
       "source": "./mods",
       "description": "Opt-in Claude Code mods for lexi: the gate's last result in the status line and above the prompt, a toast when the lexi guard blocks an edit, and a pane of the session's subagents colored by type, each opening onto its tool-call timeline, answer, duration and tokens. Needs CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1.",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "author": {
         "name": "Savino Fiore"
       },
