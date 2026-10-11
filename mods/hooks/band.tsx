@@ -1,12 +1,13 @@
 import { atom, read } from 'claude-code'
-import type { EngineInterface, MatchedHook } from 'claude-code'
+import type { MatchedHook } from 'claude-code'
 import type { AgentRun, GateRun } from '../types'
+import { usageRow } from './usage.tsx'
+import type { Elements } from './usage.tsx'
 
-// The engine's state scan wants each atom spelled in the file that reads it: gate.ts and agents.tsx write these.
+// The engine's state scan wants each atom spelled in the file that reads it: gate.ts, agents.tsx and usage.tsx write these.
 const lastGate = atom({ plugin: 'lexi-mods', key: 'lastGate' } as const, null)
 const agents = atom({ plugin: 'lexi-mods', key: 'agents' } as const, [])
-
-type Elements = ReturnType<EngineInterface['ui']['resolve']>
+const usage = atom({ plugin: 'lexi-mods', key: 'usage' } as const, null)
 
 // One short row: the rest are counted, the pane lists them all.
 const SHOWN = 4
@@ -27,15 +28,18 @@ const agentsRow = (ui: Elements, running: readonly AgentRun[]) => (
   </ui.Box>
 )
 
-// Above the prompt, whatever the terminal's width: the last gate run and the subagents running now.
+// Above the prompt, whatever the terminal's width: the session's usage, the last gate run and the subagents running now.
 export const onAbovePrompt: MatchedHook<'ui.render', { component: 'AbovePrompt' }> = async ($, e, next) => {
   const run = await read($, lastGate)
   const running = (await read($, agents)).filter((one) => !one.isDone)
-  if ((run === null && running.length === 0) || e.props.hasSurvey) return next(e)
+  const now = await read($, usage)
+  if ((now === null && run === null && running.length === 0) || e.props.hasSurvey) return next(e)
   const ui = $.ui.resolve(e)
-  const age = run === null ? 0 : Math.round(((await $.clock.now()) - run.at) / 1000)
+  const at = await $.clock.now()
+  const age = run === null ? 0 : Math.round((at - run.at) / 1000)
   return (
     <ui.Box flexDirection="column">
+      {now !== null && usageRow(ui, now, at)}
       {run !== null && gateRow(ui, run, age)}
       {running.length > 0 && agentsRow(ui, running)}
     </ui.Box>

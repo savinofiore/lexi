@@ -115,7 +115,9 @@ Claude Code merges its `env` into every hook and command. Check that git ignores
 **4. Opt the project in.** Open `claude` in the project folder, accept the trust prompt (Claude Code reads
 project settings only in a trusted folder), then run `/lexi:init`.
 
-**5. Mods (optional).** `lexi-mods` adds UI on top of lexi: `lexi:GREEN`/`lexi:RED` in the status line and the
+**5. Mods (optional).** `lexi-mods` adds UI on top of lexi: a usage row above the prompt (model, context,
+5h and weekly rate-limit bars that warm as they fill, with the time to reset, tokens and cost), so a
+`statusLine` command is no longer needed; `lexi:GREEN`/`lexi:RED` in the status line and the
 last gate run above the prompt, a toast when the guard blocks an edit, and the running subagents above the
 prompt, one color per type, at any terminal width. A pane opens each one onto its tool calls, answer, duration
 and tokens: on the first spawn when the terminal is wide enough (144 columns, 110 once you opened it),
