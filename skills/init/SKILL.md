@@ -22,6 +22,10 @@ the questions this version added whose answer is missing:
   do not ask again unless they bring it up;
 - `jev` is an object but `.claude/skills/code-review/` or
   `.claude/skills/review/` is missing → write the missing shim (step 5);
+- a shim that still names `jev:code-review` (written before lexi 0.12.0) → rewrite it to the
+  step 5 text without asking: it is lexi's own file, and the `jev` plugin it calls is gone;
+- `.claude/settings.json` `enabledPlugins` lists `jev@lexi` or `lexi-mods@lexi` → remove them
+  and make sure `lexi@lexi` is `true`: both are empty stubs since 0.12.0;
 - `.claude/settings.json` lacks any of the step 4 marketplaces, or one has
   `autoUpdate` other than `true` → merge it in (step 4, team install).
 
@@ -115,8 +119,8 @@ transcripts and diffs to a third-party API, so enabling it is their call:
 No → write `"jev": false` in `.lexi.json` (so an update run does not ask again), move to step 6. Yes → check the prerequisites and name any
 that is missing; the user fixes them, you never ask for the key in chat:
 
-- the jev plugin: installed with lexi; if `/jev:code-review` is not
-  in the skill list, `/plugin update lexi@lexi` or `/plugin install jev@lexi`;
+- the Jev layer: part of lexi since 0.12.0; if `/lexi:code-review` is not
+  in the skill list, run `/plugin update lexi@lexi` (an older install may still carry `jev@lexi`: uninstall it);
 - Claude Code ≥ 2.1.276 (`claude --version`);
 - `TYPESAFE_API_KEY` under `env` in `.claude/settings.local.json` — per project,
   never in a settings file that is committed. Run
@@ -151,14 +155,14 @@ Then write, merging into existing files and never overwriting other keys:
   ```markdown
   ---
   name: code-review
-  description: Code review in this project goes through Jev (jev plugin), replacing Claude Code's built-in review. Use for "/code-review", "review the diff", "can I merge?", "is this code ok?", a PR number, a git ref or a .diff/.patch file.
+  description: Code review in this project goes through Jev (lexi plugin), replacing Claude Code's built-in review. Use for "/code-review", "review the diff", "can I merge?", "is this code ok?", a PR number, a git ref or a .diff/.patch file.
   ---
 
-  This project routes code review to Jev. Invoke the `jev:code-review` skill
+  This project routes code review to Jev. Invoke the `lexi:code-review` skill
   with these arguments and follow it: $ARGUMENTS
 
-  If that skill is not available, the jev plugin is not installed: say so and
-  stop — do not review on your own. The fix is `/plugin install jev@lexi`, or
+  If that skill is not available, the lexi plugin is missing or older than 0.12.0:
+  say so and stop — do not review on your own. The fix is `/plugin update lexi@lexi`, or
   deleting `.claude/skills/code-review/` and `.claude/skills/review/` to get the
   built-in review back.
   ```

@@ -26,6 +26,7 @@ def versions():
             "marketplace metadata": market["metadata"]["version"],
             "marketplace lexi entry": entry["lexi"],
         },
+        # Deprecation stubs: the code lives in lexi now, these only announce it.
         "jev": {
             "jev/.claude-plugin/plugin.json": load("jev/.claude-plugin/plugin.json")["version"],
             "marketplace jev entry": entry["jev"],

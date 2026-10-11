@@ -1,11 +1,18 @@
 {
   "name": "lexi-mods",
-  "description": "Opt-in Claude Code mods for lexi: a colored usage row above the prompt (model, context, rate limits with reset, tokens, cost), gate phase in the status line and a band above the prompt, a toast when the lexi guard blocks an edit, and a pane of running subagents, colored by type, each opening onto its tool-call timeline and answer.",
-  "version": "0.2.0",
-  "author": { "name": "Savino Fiore" },
+  "description": "Deprecated: the mods (usage row, gate, subagents) are part of lexi 0.12.0 and later. Install lexi and uninstall this.",
+  "version": "0.2.2",
+  "author": {
+    "name": "Savino Fiore"
+  },
   "homepage": "https://github.com/savinofiore/lexi",
   "repository": "https://github.com/savinofiore/lexi",
   "license": "MIT",
-  "keywords": ["lexi", "mods", "status-line", "subagents", "ui"],
-  "types": "./types/index.d.ts"
+  "keywords": [
+    "lexi",
+    "mods",
+    "status-line",
+    "subagents",
+    "ui"
+  ]
 }

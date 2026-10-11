@@ -5,7 +5,7 @@ description: Hybrid Jev + Pi code review. review.py has TypeSafe's Jev judge the
 
 # jev-code-review — hybrid Jev + Pi protocol
 
-Twin of the Claude Code skill (`jev/skills/code-review/SKILL.md` in the lexi package): same `review.py`,
+Twin of the Claude Code skill (`skills/code-review/SKILL.md` in the lexi package): same `review.py`,
 same `policy.json`, same `handoff`. Only tool names and the way to launch an agent differ.
 
 Division of labour, fixed:

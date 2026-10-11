@@ -5,9 +5,9 @@ import { usageRow } from './usage.tsx'
 import type { Elements } from './usage.tsx'
 
 // The engine's state scan wants each atom spelled in the file that reads it: gate.ts, agents.tsx and usage.tsx write these.
-const lastGate = atom({ plugin: 'lexi-mods', key: 'lastGate' } as const, null)
-const agents = atom({ plugin: 'lexi-mods', key: 'agents' } as const, [])
-const usage = atom({ plugin: 'lexi-mods', key: 'usage' } as const, null)
+const lastGate = atom({ plugin: 'lexi', key: 'lastGate' } as const, null)
+const agents = atom({ plugin: 'lexi', key: 'agents' } as const, [])
+const usage = atom({ plugin: 'lexi', key: 'usage' } as const, null)
 
 // One short row: the rest are counted, the pane lists them all.
 const SHOWN = 4

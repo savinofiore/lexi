@@ -14,7 +14,7 @@ Division of labour, fixed:
 | **`review.py`** | applies `policy.json`: verdict, exit code, `handoff` | hold questions or thresholds |
 | **Claude** | locates (`path:line`), verifies uncertain checks, delegates, proposes the minimal fix, reruns Jev to measure | **read the diff to decide the verdict**, rewrite it, edit without confirmation |
 
-`REVIEW` below is `python3 "${CLAUDE_SKILL_DIR}/../../review/review.py"`. Run it from the project root.
+`REVIEW` below is `python3 "${CLAUDE_SKILL_DIR}/../../jev/review/review.py"`. Run it from the project root.
 
 ## 1. Run Jev (always `--json`, save the output)
 

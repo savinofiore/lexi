@@ -61,8 +61,8 @@ lexi — write to `src/domain/discount.js` BLOCKED.
 
 ## Quick start: Claude Code
 
-**The fast way.** Open `claude` in your project and paste this prompt. It installs the full suite
-(lexi, jev, ponytail, caveman) and prepares the Jev key:
+**The fast way.** Open `claude` in your project and paste this prompt. It installs the suite
+(lexi, ponytail, caveman) and prepares the Jev key:
 
 ```text
 Install the lexi suite for Claude Code. Run these shell commands, stopping on the first failure:
@@ -88,7 +88,7 @@ and run `/lexi:init`. Answer **yes** to Jev.
 <details>
 <summary><b>Step by step instead</b></summary>
 
-**1. Install.** Add the dependency marketplaces, then lexi. It brings ponytail, caveman and jev with it.
+**1. Install.** Add the dependency marketplaces, then lexi. It brings ponytail and caveman with it.
 
 ```
 /plugin marketplace add DietrichGebert/ponytail
@@ -109,24 +109,16 @@ Claude Code merges its `env` into every hook and command. Check that git ignores
 
 **3. Verify.** Restart the session and run `/plugin`. You should see:
 
-- `lexi`: 6 skills (`init`, `lexi`, `bug`, `feature`, `tdd`, `grill`) and 1 PreToolUse hook
-- `jev`: 1 skill (`code-review`) and 1 hooks module
+- `lexi`: 7 skills (`init`, `lexi`, `bug`, `feature`, `tdd`, `grill`, `code-review`), 1 PreToolUse hook and 1 hooks module
 
 **4. Opt the project in.** Open `claude` in the project folder, accept the trust prompt (Claude Code reads
 project settings only in a trusted folder), then run `/lexi:init`.
 
-**5. Mods (optional).** `lexi-mods` adds UI on top of lexi: a usage row above the prompt (model, context,
-5h and weekly rate-limit bars that warm as they fill, with the time to reset, tokens and cost), so a
-`statusLine` command is no longer needed; `lexi:GREEN`/`lexi:RED` in the status line and the
-last gate run above the prompt, a toast when the guard blocks an edit, and the running subagents above the
-prompt, one color per type, at any terminal width. A pane opens each one onto its tool calls, answer, duration
-and tokens: on the first spawn when the terminal is wide enough (144 columns, 110 once you opened it),
-`/lexi-mods:agents` at any time. Needs
-`CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1`, as jev does.
-
-```
-/plugin install lexi-mods@lexi
-```
+**5. Interface (optional).** With `CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1` lexi also draws, above the prompt:
+the model and effort the Jev router chose, context and rate-limit bars with time to reset, tokens and cost
+(no `statusLine` command needed); `lexi:GREEN`/`lexi:RED` and the last gate run; a toast when the guard
+blocks an edit; and the running subagents, one color per type. `/subagents` opens a pane onto each one's
+tool calls, answer, duration and tokens.
 
 </details>
 
@@ -362,11 +354,10 @@ the agent stops and asks. `.lexi/allow` is per-task scratch, gitignored by `init
 | `/lexi:feature <task>` | `/skill:lexi-feature <task>` | A feature with clear scope |
 | `/lexi:grill <task>` | `/skill:lexi-grill <task>` | A feature with open scope (feature can call it) |
 | `/lexi:tdd` | `/skill:lexi-tdd` | Reference: seams, assertions, mocking, anti-patterns |
-| `/jev:code-review` | `/skill:jev-code-review` | Jev review of the working tree, a ref, a PR or a diff |
+| `/lexi:code-review` | `/skill:jev-code-review` | Jev review of the working tree, a ref, a PR or a diff |
 
 With Jev on, Claude Code's `/code-review` and `/review` also route to Jev, and the flows call the review on
-their own after the last GREEN. On Claude Code, `code-review` ships in the separate `jev` plugin; on Pi all
-seven skills ship in the one lexi package.
+their own after the last GREEN. 
 
 ---
 
@@ -506,40 +497,39 @@ Then rerun init in each project (`/lexi:init` or `/lexi-init`). On an existing `
 `testable` and the rest, and asks only what the new version added. On Pi it also installs ponytail or caveman
 if missing. Skipping this step is fine: the project keeps working as before, without the new features.
 
-### Coming from lexi < 0.9.0: move the Jev key
+### Coming from `jev` or `lexi-mods` (lexi < 0.12.0)
 
-Before 0.9.0 the Jev key lived globally, in `~/.claude/settings.json` or a shell export, so every project
-used it. From 0.9.0 it lives per project in the gitignored `.claude/settings.local.json`. If you set up Jev
-with an older version, open `claude` in each project that uses Jev and paste this prompt. It removes the
-old key everywhere, updates lexi, enables the hooks flag in your shell and leaves a placeholder
-for the new key:
+Since 0.12.0 lexi ships the Jev layer and the interface itself. `jev` and `lexi-mods` are now empty stubs that
+only say so. Move over once:
 
-```text
-Remove the old, deprecated TypeSafe (Jev) key and update lexi. Fixed rules: never print a key value
-(if you show a line, write <redacted> in place of the value), never ask me for the key in chat, stop
-at the first error and tell me what happened.
-
-1. Delete every TYPESAFE_API_KEY you find in: env in ~/.claude/settings.json, env in this project's
-   .claude/settings.local.json, and `export TYPESAFE_API_KEY=` lines in ~/.zshrc, ~/.zprofile,
-   ~/.bashrc, ~/.bash_profile and ~/.profile. Touch nothing else in those files. If you cannot edit
-   ~/.claude/settings.json (Self-Modification block), tell me what to remove and I will do it by hand.
-2. Update the plugins: `claude plugin marketplace update lexi`, then `claude plugin update lexi@lexi`
-   and `claude plugin update jev@lexi`.
-3. In this project's .claude/settings.local.json set env.TYPESAFE_API_KEY to "PASTE_YOUR_KEY_HERE",
-   keeping the rest of the file (create it if missing).
-4. If my shell profile (~/.zshrc for zsh, ~/.bashrc for bash) has no
-   `export CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1` line, append it. It is a switch, not a key: Jev's
-   router stays off without it in the shell environment.
-5. Summary: what you removed (file:line only), whether you added the line from step 4, lexi and jev
-   versions after the update. Remind me to paste the new key by hand into the file from step 3,
-   fully quit the editor (Cmd+Q) and the terminal, reopen them and restart claude.
+```
+/plugin uninstall jev@lexi
+/plugin uninstall lexi-mods@lexi
+/plugin marketplace update lexi
+/plugin update lexi@lexi
 ```
 
-Quitting the editor matters: editors built on VS Code read the shell environment once at launch and pass
-it to every integrated terminal, so an old exported key survives until the app restarts.
+Restart `claude`, then run `/lexi:init` in each project. On an existing `.lexi.json` it rewrites the review
+shims (`.claude/skills/code-review` and `review`) to call `/lexi:code-review` and drops `jev@lexi` and
+`lexi-mods@lexi` from `.claude/settings.json`. Commit the result.
 
-Get the key over a separate channel (a password manager or vault), never in the same message as the
-prompt. If an old global key was shared, revoke it.
+What was renamed: `/jev:code-review` is `/lexi:code-review`, `/lexi-mods:agents` is `/subagents` (the engine owns `/agents`). Nothing else
+changes: same `.lexi.json`, same key, same flags.
+
+### Coming from lexi < 0.9.0: move the Jev key
+
+Before 0.9.0 the Jev key lived globally (`~/.claude/settings.json` or a shell export). From 0.9.0 it lives per
+project in the gitignored `.claude/settings.local.json`.
+
+1. Delete the old key: `env.TYPESAFE_API_KEY` in `~/.claude/settings.json` and any `export TYPESAFE_API_KEY=`
+   line in `~/.zshrc`, `~/.zprofile`, `~/.bashrc`, `~/.bash_profile`, `~/.profile`.
+2. In each project that uses Jev, put the key in `.claude/settings.local.json` (`{ "env": { "TYPESAFE_API_KEY": "..." } }`)
+   and check `git check-ignore .claude/settings.local.json`.
+3. Add `export CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1` to your shell profile: the router stays off without it.
+4. Fully quit the editor (Cmd+Q) and the terminal, reopen, restart `claude`. Editors built on VS Code read the
+   shell environment once at launch, so an old exported key survives until the app restarts.
+
+Get the key over a separate channel (a password manager), never in chat. If an old global key was shared, revoke it.
 
 ---
 
@@ -553,7 +543,7 @@ prompt. If an old global key was shared, revoke it.
 | **[pi-subagents](https://www.npmjs.com/package/pi-subagents)** | Pi only, optional: the gate in an isolated subagent | `pi list` |
 | **`TYPESAFE_API_KEY`** | jev only, optional | [jev requirements](jev/README.md#requirements) |
 | **Claude Code ≥ 2.1.276** | jev's router and compaction hooks | `claude --version` |
-| **Claude Code ≥ 2.1.296** | lexi-mods, optional | `claude --version` |
+| **Claude Code ≥ 2.1.296** | the interface, optional | `claude --version` |
 
 > [!WARNING]
 > Without Python every guarded edit fails instead of being checked. macOS and most Linux distributions
@@ -598,11 +588,13 @@ jev's checks are in [jev/README.md](jev/README.md#development).
 ```
 hooks/            guard and session hint scripts + tests (source of truth for both runtimes)
 tests/pressure/   skill pressure scenarios, headless runner, Jev judge
-skills/           Claude Code skills (init, lexi, bug, feature, grill, tdd)
+skills/           Claude Code skills (init, lexi, bug, feature, grill, tdd, code-review)
+engine/           Claude Code hooks module: jev/ (router, compaction) and ui/ (usage row, gate, subagents)
 .claude-plugin/   Claude Code plugin + marketplace manifests
 pi/extensions/    Pi extensions: guard (wraps hooks/tdd_guard.py), hint (wraps hooks/session_hint.py), init, caveman, jev-router, jev-compact
 pi/skills/        Pi skills (lexi-*, jev-code-review)
-jev/              jev Claude Code plugin; shared/ and review/ are imported by the Pi side too
+jev/              shared/ and review/, imported by the engine and the Pi side; plus the jev deprecation stub
+mods/             lexi-mods deprecation stub
 package.json      Pi package manifest (pi.extensions, pi.skills)
 ```
 
@@ -615,20 +607,19 @@ conditions, test guidance) means changing its counterpart too.
 The marketplace takes its name from the manifest, so the clone and the GitHub version cannot coexist.
 
 ```
-/plugin marketplace add /absolute/path/to/lexi   # edits to hooks/, skills/, jev/ are live
+/plugin marketplace add /absolute/path/to/lexi   # edits to hooks/, skills/, engine/ are live
 /plugin install lexi@lexi
 ```
 
 One session only, without touching installed plugins:
 
 ```bash
-CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1 claude --plugin-dir /absolute/path/to/lexi/jev
+CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1 claude --plugin-dir /absolute/path/to/lexi
 ```
 
 Back to GitHub:
 
 ```
-/plugin uninstall jev@lexi
 /plugin uninstall lexi@lexi
 /plugin marketplace remove lexi
 /plugin marketplace add savinofiore/lexi

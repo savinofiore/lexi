@@ -3,11 +3,11 @@ import type { EngineInterface, Hook, MatchedHook } from 'claude-code'
 import type { AgentRun } from '../types'
 import { colorOf } from './palette.ts'
 
-export const PANE = 'lexi-mods-agents' as const
+export const PANE = 'lexi-agents' as const
 const TITLE = 'Subagents'
 
-const agents = atom({ plugin: 'lexi-mods', key: 'agents' } as const, [])
-const selected = atom({ plugin: 'lexi-mods', key: 'selected' } as const, null)
+const agents = atom({ plugin: 'lexi', key: 'agents' } as const, [])
+const selected = atom({ plugin: 'lexi', key: 'selected' } as const, null)
 
 // shortcut: keeps the last 50 subagents of the session; raise it if a long session needs more.
 const KEEP = 50
@@ -48,11 +48,11 @@ export const onAgentToolCall: Hook<'tool.call'> = async ($, e, next) => {
 }
 
 export const onSessionStart: Hook<'session.start'> = async ($, e, next) => {
-  await $.command.register({ name: 'agents', description: 'Show the subagents of this session, colored by type' })
+  await $.command.register({ name: 'subagents', description: 'Show the subagents of this session, colored by type' })
   return next(e)
 }
 
-export const onAgentsCommand: MatchedHook<'command.run', { command: 'agents' }> = async ($) => {
+export const onAgentsCommand: MatchedHook<'command.run', { command: 'subagents' }> = async ($) => {
   await $.ui.open({ id: PANE, title: TITLE })
   return { text: 'Subagents pane opened.' }
 }

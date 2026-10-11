@@ -25,8 +25,11 @@ export type Usage = {
   usd?: number
 }
 
+// The model and effort the Jev router settled on for the session, as the usage row shows them.
+export type Routing = { model: string; effort: string }
+
 declare module 'claude-code' {
   interface PluginState {
-    'lexi-mods': { lastGate: GateRun | null; agents: AgentRun[]; selected: string | null; usage: Usage | null }
+    'lexi': { lastGate: GateRun | null; agents: AgentRun[]; selected: string | null; usage: Usage | null; routing: Routing | null }
   }
 }

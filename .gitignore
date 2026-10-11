@@ -2,3 +2,4 @@
 __pycache__/
 jev/types/
 mods/.claude-plugin/types/
+.claude-plugin/types/

@@ -6,12 +6,27 @@ import { GREEN, ORANGE, RED, YELLOW } from './usage.tsx'
 const BAND = { component: 'AbovePrompt', props: { hasSurvey: false, isWorking: false, maxRows: 3, bodyColumns: 120, scroll: { offset: 0, bodyRows: 3 }, view: {} } } as const
 const HOUR = 3_600_000
 
+// A Jev that calls the prompt trivial: the router moves the session to Sonnet at medium effort.
+const JEV_FAST = {
+  status: 200, ok: true, headers: {},
+  text: JSON.stringify({ answers: { tier: { choice: 'fast', confidence: 0.98 }, effort: { score: 0.2, confidence: 0.94 }, risky: { noul: 0.04 } } }),
+}
+const STEP = { turnId: 't1', index: 0, model: 'claude-opus-5-5', effort: 'medium' as const, messageCount: 1 }
+
+const drain = async (stream: AsyncIterable<unknown>) => {
+  for await (const chunk of stream) void chunk
+}
+
 // A session on Opus 5.5 whose clock starts at 0; panes and the status line go nowhere.
 const setupWorld = (on: On) => {
   mock.clock(on)
   on('session.model', async () => ({ value: 'Opus 5.5' }))
   on('session.measure', async (_$, e) => ({ changed: e.changed }))
   on('ui.status', async () => ({ value: undefined }))
+  on('ui.log', async () => ({ value: undefined }))
+  on('turn.step', async function* (_$, e) {
+    return { turnId: e.turnId, index: e.index, answer: '', toolUses: [], stopReason: null, usage: null }
+  })
   on('ui.render', async () => ({ type: 'Box', props: {}, children: [] }))
 }
 
@@ -22,7 +37,7 @@ const measure = (percent: number, rateLimits: SessionRateLimit[] = [], usd?: num
   changed: ['context'],
 })
 
-const mountBand = ($: Engine) => $.ui.mount({ plugin: 'lexi-mods', surface: 'terminal', ...BAND })
+const mountBand = ($: Engine) => $.ui.mount({ plugin: 'lexi', surface: 'terminal', ...BAND })
 
 const bandText = async ($: Engine) => {
   const ui = await mountBand($)
@@ -88,5 +103,30 @@ describe('usage row', () => {
   test('before any measure the band draws nothing of its own', async ($, on) => {
     setupWorld(on)
     expect(await bandText($)).toBe('')
+  })
+
+  test('the row shows the model and effort the router chose, from the main loop only, and a later measure keeps them', async ($, on) => {
+    setupWorld(on)
+    mock.env(on, { TYPESAFE_API_KEY: 'test-key' })
+    on('http.fetch', async () => ({ value: JEV_FAST }))
+    on('prompt.submit', async (_$, e) => ({ text: e.text }))
+    await $.prompt.submit({ text: 'rename foo to bar', wait: false, origin: { kind: 'composer' } })
+    await $.session.measure(measure(10))
+    await drain($.turn.step(STEP))
+    await $.session.measure(measure(20))
+    const text = await bandText($)
+    expect(text).toContain('sonnet · medium')
+    expect(text).not.toContain('Opus 5.5')
+  })
+
+  test('a subagent step leaves the model shown as it was', async ($, on) => {
+    setupWorld(on)
+    mock.env(on, { TYPESAFE_API_KEY: 'test-key' })
+    on('http.fetch', async () => ({ value: JEV_FAST }))
+    on('prompt.submit', async (_$, e) => ({ text: e.text }))
+    await $.prompt.submit({ text: 'rename foo to bar', wait: false, origin: { kind: 'composer' } })
+    await drain($.turn.step({ ...STEP, agentId: 'agent-1' }))
+    await $.session.measure(measure(10))
+    expect(await bandText($)).toContain('Opus 5.5')
   })
 })

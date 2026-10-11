@@ -1,5 +1,5 @@
 import type { EngineInterface, Hook, SessionCompactInput, SessionCompactResult, SessionMessage, ToolResultSummary, ToolUseSummary } from 'claude-code'
-import type { CallInfo, JevState as State, Question, StateCall as Call, StateEntry as Entry, Verdict } from '../shared/compact-policy.ts'
+import type { CallInfo, JevState as State, Question, StateCall as Call, StateEntry as Entry, Verdict } from '../../jev/shared/compact-policy.ts'
 import {
   bar,
   describeCall,
@@ -16,7 +16,7 @@ import {
   toBatches,
   truncated,
   verdictOf,
-} from '../shared/compact-policy.ts'
+} from '../../jev/shared/compact-policy.ts'
 
 // Claude Code side only: thresholds and questions live in shared/compact-policy.ts, shared with Pi.
 const RESULT_VISIBLE_MS = 30_000 // how long the outcome stays in the status line
