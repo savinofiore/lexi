@@ -17,8 +17,16 @@ export type AgentRun = {
   answer?: string
 }
 
+// The engine's status-line figures at its last measurement, as the band's usage row draws them.
+export type Usage = {
+  model: string
+  context: { tokens?: number; percent?: number }
+  rateLimits: { kind: string; percentUsed: number; resetsAt?: string }[]
+  usd?: number
+}
+
 declare module 'claude-code' {
   interface PluginState {
-    'lexi-mods': { lastGate: GateRun | null; agents: AgentRun[]; selected: string | null }
+    'lexi-mods': { lastGate: GateRun | null; agents: AgentRun[]; selected: string | null; usage: Usage | null }
   }
 }

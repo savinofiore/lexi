@@ -1,7 +1,7 @@
 {
   "name": "lexi-mods",
-  "description": "Opt-in Claude Code mods for lexi: gate phase in the status line and a band above the prompt, a toast when the lexi guard blocks an edit, and a pane of running subagents, colored by type, each opening onto its tool-call timeline and answer.",
-  "version": "0.1.1",
+  "description": "Opt-in Claude Code mods for lexi: a colored usage row above the prompt (model, context, rate limits with reset, tokens, cost), gate phase in the status line and a band above the prompt, a toast when the lexi guard blocks an edit, and a pane of running subagents, colored by type, each opening onto its tool-call timeline and answer.",
+  "version": "0.2.0",
   "author": { "name": "Savino Fiore" },
   "homepage": "https://github.com/savinofiore/lexi",
   "repository": "https://github.com/savinofiore/lexi",
