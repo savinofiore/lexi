@@ -117,7 +117,7 @@ Write `.pi/agents/lexi-gate.md` with the answers:
 name: lexi-gate
 description: Runs the project's lexi gate command and reports pass/fail.
 tools: bash
-model: <chosen model id, e.g. anthropic/claude-haiku-4-5>
+model: <chosen model id, e.g. anthropic/claude-haiku-5-5>
 ---
 
 Run exactly the command given in the task, once. Do not edit files. Report:

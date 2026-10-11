@@ -68,8 +68,9 @@ again.
 
 On Claude Code every subagent spawn (forks excepted) is classified on its own: `trivial → haiku`,
 `fast → sonnet`, `balanced → opus`, `deep → opus`. Opus 5.5 beats Fable 5.1 at every cost point, so `deep`
-is Opus at a higher effort. A session is never put on haiku: it holds its model to the end, so `trivial` stays
-at `fast`. On Pi subagent models are pinned by the subagent extension and left alone.
+is Opus at a higher effort. Haiku 5.5 takes read-only work and mechanical edits already spelled out (typo,
+rename, a described change) at 1/20 of Sonnet's price. A session is never put on haiku: it holds its model to
+the end, so `trivial` stays at `fast`. On Pi subagent models are pinned by the subagent extension and left alone.
 
 You see `[jev-router] session: sonnet · effort medium` in the transcript and `jev · …` in the status line.
 
