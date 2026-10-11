@@ -1,3 +1,4 @@
 .lexi/allow
 __pycache__/
 jev/types/
+mods/.claude-plugin/types/
