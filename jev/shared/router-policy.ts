@@ -20,8 +20,8 @@ export const QUESTIONS = {
     type: 'choice',
     instructions: 'Which is the cheapest tier that can complete this coding task well?',
     criteria: {
-      trivial: 'Read-only or single shell command: read/search/summarise files, run one command and report its output, answer from context. No edits.',
-      fast: 'Small or well-specified edit: rename a symbol, fix a typo, apply an exact change already described, fix a bug whose cause is already known, add tests for a change in one or two files.',
+      trivial: 'Read-only work, a single shell command, or a mechanical edit whose exact change is already described: read/search/summarise files, run one command and report its output, answer from context, fix a typo, rename a symbol, apply a described change.',
+      fast: 'Small edit that still needs judgement: fix a bug whose cause is already known, add tests for a change in one or two files, a short change in one or two files that is not spelled out.',
       balanced: 'Ordinary engineering: implement a well-specified change across several files, fix a bug with clear symptoms that still has to be located in the code, review a diff.',
       deep: 'Hard or high-stakes: architecture and design, debugging a failure whose cause is unknown, security, data migrations, concurrency, anything touching production or money.',
     },
