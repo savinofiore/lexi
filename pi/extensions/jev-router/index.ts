@@ -31,17 +31,15 @@ const DEFAULT_TIERS: Record<SessionTier, string> = {
   balanced: 'claude-opus-5-5',
   deep: 'claude-opus-5-5',
 }
-const STATUS_KEY = 'jev-router'
 
 let sessionAnswer: Answer | undefined
 let hasApplied = false
 let hasWarned = false
 
 export default function (pi: ExtensionAPI) {
-  pi.on('session_start', async (_event, ctx) => {
+  pi.on('session_start', async () => {
     sessionAnswer = undefined
     hasApplied = false
-    ctx.ui.setStatus(STATUS_KEY, undefined)
   })
   // The model once per session (switching midway throws away the prompt cache), the lexi flow on every prompt.
   pi.on('before_agent_start', async (event, ctx) => {
@@ -102,7 +100,6 @@ function report(ctx: ExtensionContext, answer: Answer, { fromModel, fromEffort, 
     effort && `effort ${fromEffort} → ${effort}`,
   ].filter(Boolean)
   ctx.ui.notify(`[jev-router] ${changes.length ? changes.join(', ') : `unchanged — staying on ${summary}`} (${causeOf(answer)})`, 'info')
-  ctx.ui.setStatus(STATUS_KEY, `jev · ${summary}`)
 }
 
 async function classify(ctx: ExtensionContext, prompt: string): Promise<Answer | undefined> {
