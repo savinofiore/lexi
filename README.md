@@ -509,14 +509,9 @@ only say so. Move over once:
 /plugin update lexi@lexi
 ```
 
-Restart `claude`, then in each project:
-
-1. Run `/lexi:init`.
-2. If the project has the review shims, point them at the new skill (commit the result):
-
-   ```bash
-   sed -i.bak 's/jev:code-review/lexi:code-review/' .claude/skills/code-review/SKILL.md .claude/skills/review/SKILL.md && rm .claude/skills/*/SKILL.md.bak
-   ```
+Restart `claude`, then run `/lexi:init` in each project. On an existing `.lexi.json` it rewrites the review
+shims (`.claude/skills/code-review` and `review`) to call `/lexi:code-review` and drops `jev@lexi` and
+`lexi-mods@lexi` from `.claude/settings.json`. Commit the result.
 
 What was renamed: `/jev:code-review` is `/lexi:code-review`, `/lexi-mods:agents` is `/lexi:agents`. Nothing else
 changes: same `.lexi.json`, same key, same flags.

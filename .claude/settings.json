@@ -4,6 +4,6 @@
     "CLAUDE_AUTOCOMPACT_PCT_OVERRIDE": "50"
   },
   "enabledPlugins": {
-    "lexi-mods@lexi": true
+    "lexi@lexi": true
   }
 }

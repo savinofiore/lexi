@@ -1,8 +1,8 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
-// Pi only. On Claude Code the jev plugin is installed on its own; on Pi it ships inside the lexi
-// package, so a project opts in through a `jev` object in `.lexi.json` (written by lexi-init).
+// Pi only. Both runtimes ship Jev inside the lexi package, and a project opts in through a `jev`
+// object in `.lexi.json` (written by lexi-init).
 export type JevConfig = { tiers?: Partial<Record<'fast' | 'balanced' | 'deep', string>> }
 
 const readJson = <T>(path: string): T | undefined => {
