@@ -16,7 +16,7 @@ const setupWorld = (on: On) => {
   const seen = { opened: [] as string[], spawned: 0 }
   on('ui.open', async (_$, e) => (seen.opened.push(e.id), { value: { isPlaced: true } }))
   on('ui.render', async () => ({ type: 'Box', props: {}, children: [] }))
-  on('agent.spawn', async (_$, e) => ({ model: e.parentModel, agentId: `agent-${++seen.spawned}` }))
+  on('agent.spawn', async (_$, e) => ({ model: e.model ?? e.parentModel, agentId: `agent-${++seen.spawned}` }))
   on('tool.call', async (_$, e) =>
     e.tool === 'Bash' && e.command.includes('fail') ? { isError: true, result: 'boom', text: 'boom' } : { result: 'ok', text: 'ok' })
   on('turn.complete', async (_$, e) => ({ text: e.answer }))
@@ -53,6 +53,43 @@ describe('agents', () => {
     const row = await ui.find({ type: 'Text', text: /Explore #1/ })
     expect(row?.text).toContain('running')
     expect(row?.props.color).toBe(colorOf('Explore'))
+  })
+
+  test('a row shows the model the subagent runs on, shortened to its family', async ($, on) => {
+    setupWorld(on)
+    await $.agent.spawn({ ...spawn('Explore'), model: 'claude-haiku-5-5' })
+    const ui = await mountPane($)
+    expect((await ui.find({ type: 'Text', text: /Explore #1/ }))?.text).toContain('· haiku ·')
+  })
+
+  test('a row counts the steps the subagent took', async ($, on) => {
+    setupWorld(on)
+    await $.agent.spawn(spawn('Explore'))
+    for (const [command, steps] of [['ls', '1 step'], ['ls -a', '2 steps']] as const) {
+      await $.tool.call(inAgent('agent-1', command))
+      const ui = await mountPane($)
+      expect((await ui.find({ type: 'Text', text: /Explore #1/ }))?.text).toContain(`· ${steps} ·`)
+      await ui.unmount()
+    }
+  })
+
+  test('a row is marked ▶ while running, ✓ when done and ✗ once a step failed', async ($, on) => {
+    setupWorld(on)
+    for (const type of ['Explore', 'Plan', 'Review']) await $.agent.spawn(spawn(type))
+    await $.turn.complete(finish('agent-2', 'planned'))
+    await $.tool.call(inAgent('agent-3', 'fail now'))
+    const ui = await mountPane($)
+    const glyphOf = async (label: string) => (await ui.find({ type: 'Text', text: new RegExp(`${label} ·`) }))?.text.slice(0, 1)
+    expect([await glyphOf('Explore #1'), await glyphOf('Plan #1'), await glyphOf('Review #1')]).toEqual(['▶', '✓', '✗'])
+  })
+
+  test('running subagents list above the finished ones, each group in start order', async ($, on) => {
+    setupWorld(on)
+    for (const type of ['Explore', 'Plan', 'Review']) await $.agent.spawn(spawn(type))
+    await $.turn.complete(finish('agent-1', 'found'))
+    const ui = await mountPane($)
+    const labels = (await ui.findAll({ type: 'Text', text: /#1 ·/ })).map((row) => row.text.match(/\w+ #1/)?.[0])
+    expect(labels).toEqual(['Plan #1', 'Review #1', 'Explore #1'])
   })
 
   test('a finished subagent shows its duration and tokens', async ($, on) => {

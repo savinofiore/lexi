@@ -17,7 +17,8 @@ const setupWorld = (on: On) => {
   on('ui.status', async () => ({ value: undefined }))
   on('ui.render', async () => ({ type: 'Box', props: {}, children: [] }))
   on('fs.read', async () => ({ value: JSON.stringify({ gate: GATE }) }))
-  on('tool.call', async () => (await clock.advance(3400), { result: '34 pass', text: '34 pass' }))
+  on('tool.call', async (_$, e) =>
+    e.tool === 'Bash' && e.command.includes('fail') ? { isError: true, result: 'boom', text: 'boom' } : (await clock.advance(3400), { result: '34 pass', text: '34 pass' }))
   return clock
 }
 
@@ -55,6 +56,16 @@ describe('band', () => {
     const row = await ui.find({ type: 'Text', text: /● Explore #1/ })
     await ui.unmount()
     expect(row?.props.color).toBe(colorOf('Explore'))
+  })
+
+  test('a running subagent shows its step count, and ✗ in place of ● once a step failed', async ($, on) => {
+    setupWorld(on)
+    await $.agent.spawn(spawn('Explore'))
+    const inAgent = (command: string) => ({ tool: 'Bash', command, agentId: 'agent-1' }) as unknown as Parameters<Engine['tool']['call']>[0]
+    await $.tool.call(inAgent('ls'))
+    expect(await bandText($)).toContain('● Explore #1 · 1 step')
+    await $.tool.call(inAgent('fail now'))
+    expect(await bandText($)).toContain('✗ Explore #1 · 2 steps')
   })
 
   test('a finished subagent leaves the band, which then draws nothing of its own', async ($, on) => {
