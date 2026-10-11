@@ -30,6 +30,10 @@ def versions():
             "jev/.claude-plugin/plugin.json": load("jev/.claude-plugin/plugin.json")["version"],
             "marketplace jev entry": entry["jev"],
         },
+        "lexi-mods": {
+            "mods/.claude-plugin/plugin.json": load("mods/.claude-plugin/plugin.json")["version"],
+            "marketplace lexi-mods entry": entry["lexi-mods"],
+        },
     }
 
 

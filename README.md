@@ -115,6 +115,16 @@ Claude Code merges its `env` into every hook and command. Check that git ignores
 **4. Opt the project in.** Open `claude` in the project folder, accept the trust prompt (Claude Code reads
 project settings only in a trusted folder), then run `/lexi:init`.
 
+**5. Mods (optional).** `lexi-mods` adds UI on top of lexi: `lexi:GREEN`/`lexi:RED` in the status line and the
+last gate run above the prompt, a toast when the guard blocks an edit, and a pane of the session's subagents,
+one color per type, each opening onto its tool calls, answer, duration and tokens. The pane opens on the first
+spawn when the terminal is wide enough; `/lexi-mods:agents` opens it at any time. Needs
+`CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1`, as jev does.
+
+```
+/plugin install lexi-mods@lexi
+```
+
 </details>
 
 <details>
@@ -540,6 +550,7 @@ prompt. If an old global key was shared, revoke it.
 | **[pi-subagents](https://www.npmjs.com/package/pi-subagents)** | Pi only, optional: the gate in an isolated subagent | `pi list` |
 | **`TYPESAFE_API_KEY`** | jev only, optional | [jev requirements](jev/README.md#requirements) |
 | **Claude Code ≥ 2.1.276** | jev's router and compaction hooks | `claude --version` |
+| **Claude Code ≥ 2.1.296** | lexi-mods, optional | `claude --version` |
 
 > [!WARNING]
 > Without Python every guarded edit fails instead of being checked. macOS and most Linux distributions
