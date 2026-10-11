@@ -23,7 +23,6 @@ import {
 } from '../../jev/shared/router-policy.ts'
 
 // Claude Code side only: thresholds and questions live in shared/router-policy.ts, shared with Pi.
-const SHOW_STATUS = true
 const MODEL_ID: Record<string, string> = { sonnet: 'claude-sonnet-5-5', opus: 'claude-opus-5-5' }
 const DEBUG = { to: 'debug' } as const
 
@@ -53,7 +52,6 @@ async function resetSession($: EngineInterface) {
   sessionAnswer = undefined
   sessionPlan = undefined
   await update($, routing, () => null)
-  if (SHOW_STATUS) $.ui.status(undefined)
 }
 
 // One hook per event: the model is chosen once per session, the lexi flow on every prompt.
@@ -126,7 +124,6 @@ function startSessionPlan($: EngineInterface, answer: Answer, model: string, eff
   const summary = `${shortModel(plan.model ?? model)} · effort ${String(plan.effort ?? effort ?? 'default')}`
   $.ui.log(`[jev-router] ${changes.length ? changes.join(', ') : `unchanged — staying on ${summary}`} (${causeOf(answer)})`, DEBUG)
   $.ui.log(`[jev-router] session: ${summary}`)
-  if (SHOW_STATUS) $.ui.status(`jev · ${summary}`)
   return plan
 }
 
