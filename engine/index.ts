@@ -17,7 +17,7 @@ export const register: Register = (on) => {
   on('agent.spawn', { fork: false }, routeAgent)
   on('agent.spawn', listAgent)
   on('session.compact', compact)
-  on('command.run', { command: 'agents' }, onAgentsCommand)
+  on('command.run', { command: 'subagents' }, onAgentsCommand)
   on('tool.call', GUARDED, onToolCall)
   on('tool.call', onAgentToolCall)
   on('turn.complete', onTurnComplete)

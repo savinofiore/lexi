@@ -117,7 +117,7 @@ project settings only in a trusted folder), then run `/lexi:init`.
 **5. Interface (optional).** With `CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1` lexi also draws, above the prompt:
 the model and effort the Jev router chose, context and rate-limit bars with time to reset, tokens and cost
 (no `statusLine` command needed); `lexi:GREEN`/`lexi:RED` and the last gate run; a toast when the guard
-blocks an edit; and the running subagents, one color per type. `/lexi:agents` opens a pane onto each one's
+blocks an edit; and the running subagents, one color per type. `/subagents` opens a pane onto each one's
 tool calls, answer, duration and tokens.
 
 </details>
@@ -513,7 +513,7 @@ Restart `claude`, then run `/lexi:init` in each project. On an existing `.lexi.j
 shims (`.claude/skills/code-review` and `review`) to call `/lexi:code-review` and drops `jev@lexi` and
 `lexi-mods@lexi` from `.claude/settings.json`. Commit the result.
 
-What was renamed: `/jev:code-review` is `/lexi:code-review`, `/lexi-mods:agents` is `/lexi:agents`. Nothing else
+What was renamed: `/jev:code-review` is `/lexi:code-review`, `/lexi-mods:agents` is `/subagents` (the engine owns `/agents`). Nothing else
 changes: same `.lexi.json`, same key, same flags.
 
 ### Coming from lexi < 0.9.0: move the Jev key

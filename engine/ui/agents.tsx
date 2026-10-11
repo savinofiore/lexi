@@ -48,11 +48,11 @@ export const onAgentToolCall: Hook<'tool.call'> = async ($, e, next) => {
 }
 
 export const onSessionStart: Hook<'session.start'> = async ($, e, next) => {
-  await $.command.register({ name: 'agents', description: 'Show the subagents of this session, colored by type' })
+  await $.command.register({ name: 'subagents', description: 'Show the subagents of this session, colored by type' })
   return next(e)
 }
 
-export const onAgentsCommand: MatchedHook<'command.run', { command: 'agents' }> = async ($) => {
+export const onAgentsCommand: MatchedHook<'command.run', { command: 'subagents' }> = async ($) => {
   await $.ui.open({ id: PANE, title: TITLE })
   return { text: 'Subagents pane opened.' }
 }

@@ -20,7 +20,11 @@ const setupWorld = (on: On) => {
   on('tool.call', async (_$, e) =>
     e.tool === 'Bash' && e.command.includes('fail') ? { isError: true, result: 'boom', text: 'boom' } : { result: 'ok', text: 'ok' })
   on('turn.complete', async (_$, e) => ({ text: e.answer }))
-  on('command.register', async (_$, e) => ({ value: { command: e.name } }))
+  // The engine refuses a name that is one of its own (/agents is built in), and the whole session.start hook with it.
+  on('command.register', async (_$, e) => {
+    if (e.name === 'agents') throw new Error('"/agents" refused: it is the built-in /agents')
+    return { value: { command: e.name } }
+  })
   on('command.run', async () => ({ text: 'Unknown command' }))
   on('session.start', async (_$, e) => ({ cwd: e.cwd }))
   return { clock, seen }
@@ -75,10 +79,10 @@ describe('agents', () => {
     expect(seen.opened).toEqual(['lexi-agents'])
   })
 
-  test('the agents command opens the pane', async ($, on) => {
+  test('the subagents command opens the pane, under a name the engine does not own', async ($, on) => {
     const { seen } = setupWorld(on)
     await $.session.start({ cwd: '/p', surface: null, isInteractive: true })
-    await $.command.run({ command: 'agents', args: '', origin: { kind: 'composer' }, presentation: { isFullscreen: true, columns: 160 } })
+    await $.command.run({ command: 'subagents', args: '', origin: { kind: 'composer' }, presentation: { isFullscreen: true, columns: 160 } })
     expect(seen.opened).toEqual(['lexi-agents'])
   })
 
