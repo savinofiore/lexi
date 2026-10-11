@@ -13,7 +13,9 @@ const selected = atom({ plugin: 'lexi', key: 'selected' } as const, null)
 // shortcut: keeps the last 50 subagents of the session; raise it if a long session needs more.
 const KEEP = 50
 
-const startRun = (list: readonly AgentRun[], id: string, type: string, description: string, model?: string): AgentRun => ({
+type Spawned = { id: string; type: string; description: string; model?: string }
+
+const startRun = (list: readonly AgentRun[], { id, type, description, model }: Spawned): AgentRun => ({
   id, type, description,
   ...(model === undefined ? {} : { model: shortModel(model) }),
   label: `${type} #${list.filter((run) => run.type === type).length + 1}`,
@@ -29,7 +31,7 @@ export const onAgentSpawn: Hook<'agent.spawn'> = async ($, e, next) => {
   const isFirst = (await read($, agents)).length === 0
   // Not awaited: on a narrow terminal the engine holds an unasked pane until there is room.
   if (isFirst) void $.ui.open({ id: PANE, title: TITLE })
-  await update($, agents, (list) => [...list, startRun(list, id, e.subagentType, e.description, started.model)].slice(-KEEP))
+  await update($, agents, (list) => [...list, startRun(list, { id, type: e.subagentType, description: e.description, model: started.model })].slice(-KEEP))
   return started
 }
 

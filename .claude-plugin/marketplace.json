@@ -7,14 +7,14 @@
   },
   "metadata": {
     "description": "Test-first workflow for coding agents, with the Jev decision layer (model router, verbatim compaction, code review) and an opt-in interface (usage row, gate, subagents). lexi requires ponytail and caveman.",
-    "version": "0.13.0"
+    "version": "0.13.1"
   },
   "plugins": [
     {
       "name": "lexi",
       "source": "./",
       "description": "Test-first flow without the spec ceremony. A PreToolUse hook keeps source edits behind a mirror test and protects existing assertions; /lexi:lexi drives one vertical slice at a time, red to green. Includes the Jev layer (model and effort router, verbatim compaction, /lexi:code-review) and the interface (usage row with the routed model, gate result, subagent pane). Jev stays off in a project until /lexi:init turns it on; the interface needs CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1. Requires ponytail and caveman. Run /lexi:init once per project.",
-      "version": "0.13.0",
+      "version": "0.13.1",
       "author": {
         "name": "Savino Fiore"
       },
