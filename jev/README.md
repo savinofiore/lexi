@@ -28,7 +28,7 @@ flows.
 
 **Claude Code** — the Jev layer ships inside lexi (since 0.12.0): installing `lexi@lexi` installs it, and the standalone `jev` plugin is a deprecation stub (`/plugin uninstall jev@lexi`). Then run `/lexi:init` in the project.
 
-`init` asks whether to enable Jev and, on yes, writes `"jev": {}` in `.lexi.json` (the review step) and, in the
+Jev is required: `init` checks its prerequisites, writes `"jev": {}` in `.lexi.json` (its settings) and, in the
 project's `.claude/settings.json`, `CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1` (the hooks module stays off without it)
 and `CLAUDE_AUTOCOMPACT_PCT_OVERRIDE=50`. It also writes two project shims, `.claude/skills/code-review/SKILL.md`
 and `.claude/skills/review/SKILL.md`, that hand off to `jev:code-review`: a project skill replaces the built-in
@@ -44,9 +44,8 @@ session; every teammate needs it. The debug log shows `hooks module lexi@lexi no
 
 Pi has no built-in code review, so there is nothing to replace: the skill is `/skill:jev-code-review`.
 
-**Pi** — jev ships inside the lexi package. `/skill:lexi-init` asks whether to enable it, which model to use
-per tier, and writes a `jev` object in `.lexi.json`; without that object the extensions do nothing, even when
-the package is installed.
+**Pi** — jev ships inside the lexi package. `/skill:lexi-init` asks which model to use per tier and writes a
+`jev` object in `.lexi.json`. Any lexi project (one with `.lexi.json`) runs the extensions, with or without that object.
 
 ```json
 { "jev": { "tiers": { "fast": "claude-sonnet-5-5", "balanced": "claude-opus-5-5", "deep": "claude-opus-5-5" } } }
@@ -184,4 +183,4 @@ A Claude Code plugin gets exactly one hooks module, and `register` must call `on
 ## Turning it off
 
 Claude Code: `/plugin uninstall lexi@lexi`, or drop `CLAUDE_CODE_ENABLE_FUNCTION_HOOKS` from the project settings and your shell.
-Pi: remove the `jev` object from `.lexi.json`. Either runtime, one machine only: remove `TYPESAFE_API_KEY` from `.claude/settings.local.json`.
+Jev is required by lexi, so on Pi it stops only with the lexi package. Either runtime, one machine only: remove `TYPESAFE_API_KEY` from `.claude/settings.local.json`.

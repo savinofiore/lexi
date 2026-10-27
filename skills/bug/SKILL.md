@@ -96,11 +96,12 @@ Empty `.lexi/allow`. Run gate one final time. Report:
 - Root cause fixed and how
 - Tests stay as regression; nothing to delete
 
-## 7. Jev review — only if `.lexi.json` → `jev` is an object
+## 7. Jev review — required
 
 Gate green → invoke the `lexi:code-review` skill on the working tree (`--working`), title = the task in one
 line. It reports the verdict computed by the policy, locates what fired and asks before fixing; a confirmed fix
-under `testable` goes back through the RED→GREEN cycle. Add the verdict to the report. `jev` absent or `false` → skip this step.
+under `testable` goes back through the RED→GREEN cycle. Add the verdict to the report. No verdict (missing key, `review.py` error) → the task is not done: say why
+and stop, as the review skill does.
 
 Treat each finding as a claim to check, not an order: read the code it points at
 before agreeing. A finding that is wrong for this codebase gets a one-line

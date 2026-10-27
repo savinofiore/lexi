@@ -15,6 +15,8 @@ This skill owns routing. Test quality lives in `lexi:tdd`, scope interrogation i
 `lexi:grill`, test proposal in `lexi:feature` (new tests), bug fixing in `lexi:bug`
 (rewrite existing tests), and how much code to write in **ponytail** — the one
 external plugin lexi requires. If ponytail is missing, say so instead of improvising.
+Jev is required too: its review closes every bug and feature flow, and without
+`TYPESAFE_API_KEY` the flow stops there instead of declaring the task done.
 
 ## 1. Understand and route
 

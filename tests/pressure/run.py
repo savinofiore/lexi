@@ -12,6 +12,7 @@ Costs a real Claude session per scenario and a Jev call: not part of the gate.
 Needs `claude` on PATH and TYPESAFE_API_KEY (shell, or .claude/settings.local.json).
 Each transcript stays in its temp folder, printed next to the verdict.
 """
+import glob
 import json
 import os
 import re
@@ -50,8 +51,22 @@ def prepare(scenario):
     return work
 
 
+def plugin_dirs():
+    """lexi plus its installed dependencies: an inline lexi whose dependencies are missing is not loaded at all."""
+    with open(os.path.join(ROOT, ".claude-plugin", "plugin.json"), encoding="utf-8") as handle:
+        dependencies = json.load(handle)["dependencies"]
+    cache = os.path.join(os.environ.get("CLAUDE_CONFIG_DIR") or os.path.expanduser("~/.claude"), "plugins", "cache")
+    dirs = [ROOT]
+    for dep in dependencies:
+        versions = glob.glob(os.path.join(cache, dep["marketplace"], dep["name"], "*", ""))
+        if not versions:
+            sys.exit(f"{dep['name']}@{dep['marketplace']} is not installed: /plugin install lexi@lexi brings it")
+        dirs.append(max(versions, key=os.path.getmtime))
+    return dirs
+
+
 def run_agent(work, prompt):
-    command = ["claude", "-p", prompt, "--plugin-dir", ROOT, "--plugin-dir", os.path.join(ROOT, "jev"),
+    command = ["claude", "-p", prompt, *(arg for path in plugin_dirs() for arg in ("--plugin-dir", path)),
                "--output-format", "stream-json", "--verbose", "--permission-mode", "bypassPermissions"]
     result = subprocess.run(command, cwd=work, capture_output=True, encoding="utf-8", timeout=CLAUDE_TIMEOUT_S)
     with open(os.path.join(work, "transcript.jsonl"), "w", encoding="utf-8") as handle:

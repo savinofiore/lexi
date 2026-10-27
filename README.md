@@ -29,7 +29,7 @@ until it goes green. lexi makes that impossible, not just discouraged.
 | 🧭 **Right flow for the task** | Bug, clear feature or open feature: the router picks the path, you confirm the tests. |
 | ✂️ **Minimal GREEN** | [ponytail](https://github.com/DietrichGebert/ponytail) keeps every implementation step as small as it can be. |
 | 🔁 **Two runtimes, one flow** | Same skills and same guard on **Claude Code** and **Pi** (`@earendil-works/pi-coding-agent`). |
-| 🤖 **Optional review with [jev](jev/README.md)** | Picks model and effort per session, compacts context verbatim, and reviews the diff after the last GREEN with a verdict computed in code. Off until `init` turns it on. |
+| 🤖 **Review with [jev](jev/README.md)** | Picks model and effort per session, compacts context verbatim, and reviews the diff after the last GREEN with a verdict computed in code. Required, like ponytail and caveman. |
 
 ### What it looks like
 
@@ -76,14 +76,14 @@ Then check .claude/settings.local.json in this project: make sure git ignores it
 if it is tracked, untrack it and add it to .gitignore). If env.TYPESAFE_API_KEY is missing there, add it
 with the value "PASTE_YOUR_KEY_HERE" and keep every other setting. Never write the key in a committed
 file, and never print its value. Finish by listing what got installed, and remind me to put my key there, restart the session, and run
-/lexi:init answering yes to Jev.
+/lexi:init.
 ```
 
 In auto mode Claude Code may refuse to edit its own settings files (`[Self-Modification]`): that is
 by design. Add the key by hand as in step 2 below.
 
 Then restart `claude` in the same folder (new plugins load only in a new session), accept the trust prompt,
-and run `/lexi:init`. Answer **yes** to Jev.
+and run `/lexi:init`.
 
 <details>
 <summary><b>Step by step instead</b></summary>
@@ -99,7 +99,7 @@ and run `/lexi:init`. Answer **yes** to Jev.
 
 From a shell: `claude plugin marketplace add savinofiore/lexi && claude plugin install lexi@lexi`.
 
-**2. Jev key** (only for Jev). Put it in the project's `.claude/settings.local.json`, one key per project.
+**2. Jev key** (required). Put it in the project's `.claude/settings.local.json`, one key per project.
 Claude Code merges its `env` into every hook and command. Check that git ignores the file
 (`git check-ignore .claude/settings.local.json`); a tracked local file leaks the key on the next push:
 
@@ -130,8 +130,8 @@ opens a pane that lists them (running first, with the model each runs on, ▶/�
   `autoUpdate: true`, plus `enabledPlugins: { "lexi@lexi": true }`. Commit this file. Teammates who trust the
   folder are offered lexi, and later versions reach them with any new dependencies (third-party marketplaces
   do not auto-update by default).
-- If you enable Jev:
-  - `"jev": {}` in `.lexi.json`;
+- For Jev, which is required:
+  - `"jev": {}` in `.lexi.json`, the place for its settings;
   - `CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1` and `CLAUDE_AUTOCOMPACT_PCT_OVERRIDE=50` in `.claude/settings.json`.
     While Claude Code's plugin-hooks rollout is off server-side, the settings value is read too late: every
     teammate also needs `export CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1` in their shell profile (`~/.zshrc`),
@@ -156,7 +156,7 @@ pi install git:github.com/JuliusBrussee/caveman
 pi install git:github.com/savinofiore/lexi
 ```
 
-**2. Jev key** (only for Jev). Same place as on Claude Code: `env.TYPESAFE_API_KEY` in the project's
+**2. Jev key** (required). Same place as on Claude Code: `env.TYPESAFE_API_KEY` in the project's
 gitignored `.claude/settings.local.json`. A shell export (`export TYPESAFE_API_KEY=...`) also works and wins.
 
 **3. Opt the project in.** Approve the folder (once, or `pi -a` for one run), then run:
@@ -180,7 +180,7 @@ the key is per project, so both runtimes share the one file.
 
 - **Gate subagent**: with pi-subagents installed, which model runs the gate. It writes
   `.pi/agents/lexi-gate.md` and `"gate_agent": true`. Answer "inline" to keep the gate in the driving model.
-- **Jev**: on yes, which model per tier (`pi --list-models`). It writes `"jev": { "tiers": … }` in
+- **Jev**: which model per tier (`pi --list-models`). It writes `"jev": { "tiers": … }` in
   `.lexi.json` and `compaction.modelOverrides` in `.pi/settings.json`, so compaction runs at ~50%.
 
 **Package contents**, declared in `package.json`'s `pi` field:
@@ -200,8 +200,8 @@ the key is per project, so both runtimes share the one file.
 ## How it works
 
 Describe the task with `/lexi:lexi`. The router picks one of three paths. You rarely have to type it: in a
-lexi project a one-line hint at session start points every code change at `/lexi:lexi`, and with Jev enabled
-each prompt is classified as bug, feature or open scope and sent straight to that skill.
+lexi project a one-line hint at session start points every code change at `/lexi:lexi`, and Jev
+classifies each prompt as bug, feature or open scope and sends it straight to that skill.
 
 ```mermaid
 flowchart LR
@@ -213,14 +213,14 @@ flowchart LR
     F --> C{you confirm}
     C --> L[per test:<br/>RED → GREEN]
     B --> X[fix code to GREEN]
-    L --> J[Jev review<br/>if enabled]
+    L --> J[Jev review]
     X --> J
     J --> P([report])
 ```
 
 - **GREEN is always minimal.** [ponytail](https://github.com/DietrichGebert/ponytail) asks whether the code
   needs to exist, is already here, is covered by the stdlib, or fits in one line.
-- **Jev review** runs only if the project enabled it. The verdict comes from the policy. You confirm each fix,
+- **Jev review** closes every flow: without a verdict the task is not done. The verdict comes from the policy. You confirm each fix,
   and a fix under `testable` goes back through RED → GREEN.
 
 <details>
@@ -254,7 +254,7 @@ lexi router <bug description>
 ```
 lexi router <clear feature description>
   → feature skill
-    → propose 3-5 unit tests (no widget tests)
+    → propose 3-5 unit tests (no UI tests)
       "applies 10% discount", "caps at 50%", "rejects negative", …
     → wait for confirmation (approve, add any I missed)
     → confirm seams (public boundaries under test)
@@ -367,20 +367,21 @@ their own after the last GREEN.
 
 ```json
 {
-  "gate": "flutter test",
-  "source": "lib/",
+  "gate": "npm test",
+  "source": "src/",
   "tests": "test/",
-  "test_suffix": "_test.dart",
-  "testable": ["lib/models/", "lib/repositories/", "lib/utils/"]
+  "test_suffix": ".test.ts",
+  "testable": ["src/domain/", "src/repositories/", "src/parsers/"]
 }
 ```
 
 **Mirror rule**: `<source><rel>.<ext>` maps to `<tests><rel><test_suffix>`. For co-located tests, set `tests`
-equal to `source`.
+equal to `source`. Tests named by prefix (`test_cart.py`), kept in `__tests__/`, or spread over several roots
+(a monorepo) use `mirrors` instead: see *More stacks*.
 
 | Optional key | Effect |
 |---|---|
-| `"jev": {}` | Turns on the review after the last GREEN (both runtimes) and, on Pi, the router and compaction. See [jev](jev/README.md) for `tiers` and the conventions file `.lexi/review.json`. `"jev": false` records a "no" so updates stop asking |
+| `"jev": {}` | Jev's settings. Jev runs in every lexi project either way; see [jev](jev/README.md) for `tiers` and the conventions file `.lexi/review.json`. A `"jev": false` from before 0.14.0 no longer turns it off |
 | `"gate_agent": true` | Pi only: runs the gate through the `lexi-gate` subagent defined in `.pi/agents/lexi-gate.md`. Absent: the gate runs inline. Claude Code ignores it |
 
 <details>
@@ -393,8 +394,11 @@ equal to `source`.
 { "gate": "npx vitest run", "source": "src/", "tests": "src/",
   "test_suffix": ".test.ts", "testable": ["src/domain/", "src/lib/"] }
 
-{ "gate": "pytest -q tests/unit", "source": "app/", "tests": "tests/unit/",
-  "test_suffix": "_test.py", "testable": ["app/services/", "app/parsers/"] }
+{ "gate": "pytest -q tests/unit", "testable": ["app/services/", "app/parsers/"],
+  "mirrors": [{ "source": "app/", "test": "tests/unit/{dir}test_{name}.py" }] }
+
+{ "gate": "./gradlew test", "source": "src/main/java/", "tests": "src/test/java/",
+  "test_suffix": "Test.java", "testable": ["src/main/java/com/acme/domain/"] }
 ```
 
 The Vitest line is co-located: `src/cart/total.ts` maps to `src/cart/total.test.ts`.
@@ -495,7 +499,15 @@ pi update git:github.com/savinofiore/lexi
 
 Then rerun init in each project (`/lexi:init` or `/lexi-init`). On an existing `.lexi.json` it keeps `gate`,
 `testable` and the rest, and asks only what the new version added. On Pi it also installs ponytail or caveman
-if missing. Skipping this step is fine: the project keeps working as before, without the new features.
+if missing. Skipping this step is fine: the project keeps working as before, without the new features
+(except for the Jev change below).
+
+### Coming from lexi < 0.14.0: Jev is required
+
+Jev used to be opt-in; now it runs in every lexi project, like ponytail and caveman. `"jev": false` in
+`.lexi.json` no longer turns it off, and the bug and feature flows do not close without Jev's review. Put
+`TYPESAFE_API_KEY` in the project's gitignored `.claude/settings.local.json`, then rerun init: it replaces
+the `false` with `{}` and adds the settings and shims Jev needs.
 
 ### Coming from `jev` or `lexi-mods` (lexi < 0.12.0)
 
@@ -541,7 +553,7 @@ Get the key over a separate channel (a password manager), never in chat. If an o
 | **[ponytail](https://github.com/DietrichGebert/ponytail)** | Claude Code: governs every GREEN step. Installed with lexi. Pi has no port: lexi's Pi skills carry the same ladder inline | `/plugin` |
 | **[caveman](https://github.com/JuliusBrussee/caveman)** | Terse output in every session. Claude Code: installed with lexi. Pi: `/lexi-init` installs it if missing, and lexi warns at session start when it is missing | `/plugin` / `pi list` |
 | **[pi-subagents](https://www.npmjs.com/package/pi-subagents)** | Pi only, optional: the gate in an isolated subagent | `pi list` |
-| **`TYPESAFE_API_KEY`** | jev only, optional | [jev requirements](jev/README.md#requirements) |
+| **`TYPESAFE_API_KEY`** | Jev, required: without it `init` stops and the flows do not close | [jev requirements](jev/README.md#requirements) |
 | **Claude Code ≥ 2.1.276** | jev's router and compaction hooks | `claude --version` |
 | **Claude Code ≥ 2.1.296** | the interface, optional | `claude --version` |
 

@@ -131,4 +131,40 @@ with tempfile.TemporaryDirectory() as repo:
     # no .lexi.json -> dormant, the project has not opted in
     assert run(repo, "Write", "lib/models/order.dart") == ALLOW
 
+MIRRORS_CONFIG = {
+    "gate": "true",
+    "mirrors": [
+        {"source": "src/", "test": "tests/{dir}test_{name}.py"},
+        {"source": "packages/api/src/", "test": "packages/api/src/{dir}__tests__/{name}.test.ts"},
+    ],
+    "testable": ["src/", "packages/api/src/"],
+}
+
+
+def setup_repo(repo, config, files):
+    subprocess.run(["git", "init", "-q"], cwd=repo, check=True)
+    subprocess.run(["git", "config", "user.email", "t@t"], cwd=repo, check=True)
+    subprocess.run(["git", "config", "user.name", "t"], cwd=repo, check=True)
+    write(repo, ".lexi.json", json.dumps(config))
+    for rel, body in files.items():
+        write(repo, rel, body)
+    subprocess.run(["git", "add", "-A"], cwd=repo, check=True)
+    subprocess.run(["git", "commit", "-qm", "init"], cwd=repo, check=True)
+
+
+with tempfile.TemporaryDirectory() as repo:
+    setup_repo(repo, MIRRORS_CONFIG, {"src/pkg/cart.py": "", "tests/pkg/test_cart.py": "def test_a(): pass\n"})
+    # python_prefix_mirror_blocks_source_without_test: a `mirrors` template puts the prefix where Python wants it
+    assert run(repo, "Write", "src/pkg/order.py") == BLOCK
+    assert run(repo, "Edit", "src/pkg/cart.py") == ALLOW
+    # python_prefix_test_file_is_recognised: the template also says what a test file is
+    py_append = {"old_string": "def test_a(): pass", "new_string": "def test_a(): pass\ndef test_b(): pass"}
+    py_rewrite = {"old_string": "def test_a(): pass", "new_string": "def test_b(): pass"}
+    assert run(repo, "Edit", "tests/pkg/test_cart.py", py_append) == ALLOW
+    assert run(repo, "Edit", "tests/pkg/test_cart.py", py_rewrite) == BLOCK
+    # dunder_tests_dir_mirror: the test sits in a folder next to the source, not in a parallel tree
+    assert run(repo, "Write", "packages/api/src/cart/total.ts") == BLOCK
+    write(repo, "packages/api/src/cart/__tests__/total.test.ts", "x")
+    assert run(repo, "Write", "packages/api/src/cart/total.ts") == ALLOW
+
 print("tdd_guard: all checks passed")

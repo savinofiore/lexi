@@ -1,6 +1,6 @@
 ---
 name: feature
-description: Analyze a feature, propose multiple unit tests, confirm them with the user, then execute RED→GREEN cycle. Unit tests only, no widget tests. Use for features with clear scope where you want explicit test proposals before implementation.
+description: Analyze a feature, propose multiple unit tests, confirm them with the user, then execute RED→GREEN cycle. Unit tests only, no UI tests. Use for features with clear scope where you want explicit test proposals before implementation.
 ---
 
 # feature — propose unit tests, confirm, then RED→GREEN
@@ -19,7 +19,7 @@ Read the code the feature touches. Run the gate to verify starting state. If sco
 
 ## 2. Propose unit tests
 
-Analyze the feature and propose **one concrete unit test per behaviour it adds**, not widget/UI tests. Each test:
+Analyze the feature and propose **one concrete unit test per behaviour it adds**, not UI tests. Each test:
 - Names what the unit does (e.g., "applies a 10% discount to total")
 - States expected input → output
 - No internal implementation details
@@ -77,11 +77,12 @@ Gate fully green. Report:
 
 Tests stay as permanent regression — nothing to delete.
 
-## 7. Jev review — only if `.lexi.json` → `jev` is an object
+## 7. Jev review — required
 
 Gate green → invoke the `lexi:code-review` skill on the working tree (`--working`), title = the task in one
 line. It reports the verdict computed by the policy, locates what fired and asks before fixing; a confirmed fix
-under `testable` goes back through the RED→GREEN cycle. Add the verdict to the report. `jev` absent or `false` → skip this step.
+under `testable` goes back through the RED→GREEN cycle. Add the verdict to the report. No verdict (missing key, `review.py` error) → the task is not done: say why
+and stop, as the review skill does.
 
 Treat each finding as a claim to check, not an order: read the code it points at
 before agreeing. A finding that is wrong for this codebase gets a one-line

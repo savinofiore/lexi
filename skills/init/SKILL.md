@@ -14,12 +14,12 @@ Invocation: `/lexi:init`
 ## 0. Already set up? Update, do not redo
 
 `.lexi.json` exists → this is an update run, not a fresh setup. Show the current
-`gate`, `source`, `tests`, `test_suffix` and `testable`, and keep them: do not
+`gate`, `source`, `tests`, `test_suffix` (or `mirrors`) and `testable`, and keep them: do not
 re-detect or rewrite them unless the user asks to. Skip steps 1–4 and ask only
 the questions this version added whose answer is missing:
 
-- no `jev` key → step 5 (Jev). `"jev": false` means the user already said no —
-  do not ask again unless they bring it up;
+- no `jev` key, or `"jev": false` (written before lexi 0.14.0, when Jev was
+  optional) → step 5 (Jev). Jev is required now: `false` no longer turns it off;
 - `jev` is an object but `.claude/skills/code-review/` or
   `.claude/skills/review/` is missing → write the missing shim (step 5);
 - a shim that still names `jev:code-review` (written before lexi 0.12.0) → rewrite it to the
@@ -34,9 +34,11 @@ only.
 
 ## 1. Detect the stack
 
-`pubspec.yaml` → Dart/Flutter · `package.json` → Node/TS · `pyproject.toml` or
-`setup.py` → Python · `go.mod` → Go · `Cargo.toml` → Rust. Several, or none you
-recognise → ask. Confirm what you found, do not assume.
+`package.json` → Node/TS · `pyproject.toml` or `setup.py` → Python ·
+`pom.xml` or `build.gradle(.kts)` → Java/Kotlin · `*.csproj` → C# · `go.mod` → Go ·
+`Cargo.toml` → Rust · `Gemfile` → Ruby · `composer.json` → PHP ·
+`pubspec.yaml` → Dart/Flutter. Several (a monorepo), or none you recognise → ask.
+Confirm what you found, do not assume.
 
 ## 2. Find the real gate command — do not invent one
 
@@ -72,18 +74,35 @@ a decision, not a default.
 
 ```json
 {
-  "gate": "flutter test",
-  "source": "lib/",
+  "gate": "npm test",
+  "source": "src/",
   "tests": "test/",
-  "test_suffix": "_test.dart",
-  "testable": ["lib/models/", "lib/repositories/", "lib/utils/"]
+  "test_suffix": ".test.ts",
+  "testable": ["src/domain/", "src/repositories/", "src/parsers/"]
 }
 ```
 
-The mirror rule is fixed: `<source><rel>.<ext>` → `<tests><rel><test_suffix>`,
-so `lib/models/user.dart` → `test/models/user_test.dart`. Co-located tests work
-too — set `tests` equal to `source` and `test_suffix` to `.test.ts`, giving
-`src/cart/total.ts` → `src/cart/total.test.ts`.
+The default mirror rule: `<source><rel>.<ext>` → `<tests><rel><test_suffix>`,
+so `src/domain/user.ts` → `test/domain/user.test.ts`. Co-located tests work
+too — set `tests` equal to `source`, giving `src/cart/total.ts` →
+`src/cart/total.test.ts`. Java and Kotlin fit it as well: `src/main/java/` →
+`src/test/java/` with `Test.java`.
+
+When the project's tests do not end in a suffix, or live under more than one
+root, write `mirrors` instead of `source`/`tests`/`test_suffix`: a list of
+`{ "source", "test" }`, first match wins. In `test`, `{dir}` is the folder under
+`source` and `{name}` the file name without its extension:
+
+```json
+"mirrors": [
+  { "source": "app/", "test": "tests/{dir}test_{name}.py" },
+  { "source": "packages/api/src/", "test": "packages/api/src/{dir}__tests__/{name}.test.ts" }
+]
+```
+
+Read the mirror off the tests the repo already has; never pick a convention
+the project does not use. Code whose tests sit inside the source file (Rust's
+`#[cfg(test)]`) has no mirror the guard can check: leave it out of `testable`.
 
 Then create `.lexi/` containing an empty `allow` file, and add `.lexi/allow` to
 `.gitignore` — it is per-task scratch, not shared state.
@@ -108,16 +127,16 @@ by default, so without it each teammate stays on the version they first
 installed. An existing entry for one of these marketplaces keeps its `source`;
 only set `autoUpdate` to `true`.
 
-## 5. Jev — mandatory question, optional feature
+## 5. Jev — required
 
-Ask the user this question and wait for the answer. Jev sends prompts,
-transcripts and diffs to a third-party API, so enabling it is their call:
+Jev is part of lexi, like ponytail and caveman are: there is no opt-out. Tell the
+user in one line, then go on without asking:
 
-> Enable Jev in this project (model router, verbatim compaction, code review
-> after the last GREEN)? It calls TypeSafe's API with `TYPESAFE_API_KEY`.
+> Jev (model router, verbatim compaction, code review after the last GREEN)
+> sends prompts, transcripts and diffs to TypeSafe's API with `TYPESAFE_API_KEY`.
 
-No → write `"jev": false` in `.lexi.json` (so an update run does not ask again), move to step 6. Yes → check the prerequisites and name any
-that is missing; the user fixes them, you never ask for the key in chat:
+Check the prerequisites. Any missing one stops `init` here: name it, the user
+fixes it, then run `/lexi:init` again. You never ask for the key in chat.
 
 - the Jev layer: part of lexi since 0.12.0; if `/lexi:code-review` is not
   in the skill list, run `/plugin update lexi@lexi` (an older install may still carry `jev@lexi`: uninstall it);
@@ -130,8 +149,8 @@ that is missing; the user fixes them, you never ask for the key in chat:
 
 Then write, merging into existing files and never overwriting other keys:
 
-- `.lexi.json` → `"jev": {}` — turns on the review step of the bug and
-  feature flows;
+- `.lexi.json` → `"jev": {}` (replacing a `false`) — the place for Jev's
+  settings; the review step of the bug and feature flows runs either way;
 - `.claude/settings.json` → under `env`: `"CLAUDE_CODE_ENABLE_FUNCTION_HOOKS": "1"`
   (the plugin's hooks module stays off without it) and
   `"CLAUDE_AUTOCOMPACT_PCT_OVERRIDE": "50"` (compaction runs earlier, so Jev
@@ -159,13 +178,17 @@ Then write, merging into existing files and never overwriting other keys:
   ---
 
   This project routes code review to Jev. Invoke the `lexi:code-review` skill
-  with these arguments and follow it: $ARGUMENTS
+  with these arguments and follow it: ARGS_TOKEN
 
   If that skill is not available, the lexi plugin is missing or older than 0.12.0:
   say so and stop — do not review on your own. The fix is `/plugin update lexi@lexi`, or
   deleting `.claude/skills/code-review/` and `.claude/skills/review/` to get the
   built-in review back.
   ```
+
+  Write `ARGS_TOKEN` as a dollar sign followed by `ARGUMENTS`, no space: Claude
+  Code fills that token with the caller's arguments when the shim runs. It is
+  spelled out here because in this file it would already hold init's own.
 
   `review/SKILL.md` is the same file with `name: review` and `"/review"` in
   place of `"/code-review"` in the description.
@@ -185,6 +208,6 @@ Say that the project's own conventions can be added to the review later in
    it one file at a time as the code gets touched.
 
 Report the gate command, the `testable` list, what you deliberately left out,
-that count, and whether Jev is on (with any missing prerequisite). With Jev on,
-the router confirms itself on the first prompt of the next session:
+that count, and that Jev's prerequisites are in place. The router confirms
+itself on the first prompt of the next session:
 `[jev-router] session: …`.

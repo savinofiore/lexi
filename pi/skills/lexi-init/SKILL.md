@@ -26,22 +26,24 @@ run `/reload`.
 ## 0. Already set up? Update, do not redo
 
 `.lexi.json` exists → this is an update run, not a fresh setup. Show the current
-`gate`, `source`, `tests`, `test_suffix`, `testable` and `gate_agent`, and keep
+`gate`, `source`, `tests`, `test_suffix` (or `mirrors`), `testable` and `gate_agent`, and keep
 them: do not re-detect or rewrite them, and do not re-ask the gate subagent
 question, unless the user asks to. Skip steps 1–5 and ask only the questions
 this version added whose answer is missing:
 
-- no `jev` key → step 6 (Jev). `"jev": false` means the user already said no —
-  do not ask again unless they bring it up.
+- no `jev` key, or `"jev": false` (written before lexi 0.14.0, when Jev was
+  optional) → step 6 (Jev). Jev is required now: `false` no longer turns it off.
 
 Then step 7. Nothing missing → say the project is up to date and run step 7
 only.
 
 ## 1. Detect the stack
 
-`pubspec.yaml` → Dart/Flutter · `package.json` → Node/TS · `pyproject.toml` or
-`setup.py` → Python · `go.mod` → Go · `Cargo.toml` → Rust. Several, or none you
-recognise → ask. Confirm what you found, do not assume.
+`package.json` → Node/TS · `pyproject.toml` or `setup.py` → Python ·
+`pom.xml` or `build.gradle(.kts)` → Java/Kotlin · `*.csproj` → C# · `go.mod` → Go ·
+`Cargo.toml` → Rust · `Gemfile` → Ruby · `composer.json` → PHP ·
+`pubspec.yaml` → Dart/Flutter. Several (a monorepo), or none you recognise → ask.
+Confirm what you found, do not assume.
 
 ## 2. Find the real gate command — do not invent one
 
@@ -77,18 +79,35 @@ a decision, not a default.
 
 ```json
 {
-  "gate": "flutter test",
-  "source": "lib/",
+  "gate": "npm test",
+  "source": "src/",
   "tests": "test/",
-  "test_suffix": "_test.dart",
-  "testable": ["lib/models/", "lib/repositories/", "lib/utils/"]
+  "test_suffix": ".test.ts",
+  "testable": ["src/domain/", "src/repositories/", "src/parsers/"]
 }
 ```
 
-The mirror rule is fixed: `<source><rel>.<ext>` → `<tests><rel><test_suffix>`,
-so `lib/models/user.dart` → `test/models/user_test.dart`. Co-located tests work
-too — set `tests` equal to `source` and `test_suffix` to `.test.ts`, giving
-`src/cart/total.ts` → `src/cart/total.test.ts`.
+The default mirror rule: `<source><rel>.<ext>` → `<tests><rel><test_suffix>`,
+so `src/domain/user.ts` → `test/domain/user.test.ts`. Co-located tests work
+too — set `tests` equal to `source`, giving `src/cart/total.ts` →
+`src/cart/total.test.ts`. Java and Kotlin fit it as well: `src/main/java/` →
+`src/test/java/` with `Test.java`.
+
+When the project's tests do not end in a suffix, or live under more than one
+root, write `mirrors` instead of `source`/`tests`/`test_suffix`: a list of
+`{ "source", "test" }`, first match wins. In `test`, `{dir}` is the folder under
+`source` and `{name}` the file name without its extension:
+
+```json
+"mirrors": [
+  { "source": "app/", "test": "tests/{dir}test_{name}.py" },
+  { "source": "packages/api/src/", "test": "packages/api/src/{dir}__tests__/{name}.test.ts" }
+]
+```
+
+Read the mirror off the tests the repo already has; never pick a convention
+the project does not use. Code whose tests sit inside the source file (Rust's
+`#[cfg(test)]`) has no mirror the guard can check: leave it out of `testable`.
 
 Then create `.lexi/` containing an empty `allow` file, and add `.lexi/allow` to
 `.gitignore` — it is per-task scratch, not shared state.
@@ -129,19 +148,19 @@ Run exactly the command given in the task, once. Do not edit files. Report:
 
 Add `"gate_agent": true` to `.lexi.json`.
 
-## 6. Jev — mandatory question, optional feature
+## 6. Jev — required
 
-Ask the user this question and wait for the answer. Jev sends prompts,
-transcripts and diffs to a third-party API, so enabling it is their call:
+Jev is part of lexi, like ponytail and caveman are: there is no opt-out. Tell the
+user in one line, then go on without asking:
 
-> Enable Jev in this project (model router, verbatim compaction, code review
-> after the last GREEN)? It calls TypeSafe's API with `TYPESAFE_API_KEY`.
+> Jev (model router, verbatim compaction, code review after the last GREEN)
+> sends prompts, transcripts and diffs to TypeSafe's API with `TYPESAFE_API_KEY`.
 
-No → write `"jev": false` in `.lexi.json` (so an update run does not ask again), move to step 7. Yes → the key goes under `env` in
-`.claude/settings.local.json` (a shell export also works). Run
-`git check-ignore -q .claude/settings.local.json`: if it fails, the file is
-tracked or not ignored — stop and say so. Name the key if missing; never ask
-for it in chat. Then ask:
+The key goes under `env` in `.claude/settings.local.json` (a shell export also
+works). Run `git check-ignore -q .claude/settings.local.json`: if it fails, the
+file is tracked or not ignored — stop and say so. A missing key stops `init`
+here: name it, the user adds it, then run init again; never ask for it in chat.
+Then ask:
 
 1. **Which model per tier?** The router moves between three tiers: `fast`
    (mechanical work), `balanced` (ordinary engineering), `deep` (hard or
@@ -157,8 +176,8 @@ Write, merging into existing files and never overwriting other keys:
 
 - `.lexi.json` → `"jev": { "tiers": { "fast": "<id>", "balanced": "<id>", "deep": "<id>" } }`
   (omit `tiers` if the user kept the defaults; `provider/id` pins a tier to
-  that provider, a bare id follows the session's provider). The `jev` key is what turns on
-  the router and compaction extensions and the review step of the flows.
+  that provider, a bare id follows the session's provider). The `jev` key only holds
+  settings: with `.lexi.json` present the router, compaction and review run either way.
 - `.pi/settings.json` → `compaction.modelOverrides`: for each tier model, set
   `reserveTokens` to half its context window from the `pi --list-models` table,
   so compaction runs at ~50% and Jev prunes while the context is still cheap

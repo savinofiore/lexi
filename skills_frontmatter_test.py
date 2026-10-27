@@ -62,10 +62,18 @@ def check_rules():
     assert value_errors("description", "[not a list]")
 
 
+def template_errors():
+    """init writes files from templates in its body; Claude Code fills `$ARGUMENTS` with init's own arguments first."""
+    inits = [os.path.join(ROOT, "skills", "init", "SKILL.md"), os.path.join(ROOT, "pi", "skills", "lexi-init", "SKILL.md")]
+    return [(os.path.relpath(p, ROOT), "`$ARGUMENTS` in a template gets init's own arguments") for p in inits
+            if "$ARGUMENTS" in open(p, encoding="utf-8").read()]
+
+
 def main():
     check_rules()
     paths = sorted(p for pattern in PATTERNS for p in glob.glob(os.path.join(ROOT, pattern)))
     failures = [(os.path.relpath(p, ROOT), e) for p in paths for e in skill_errors(p)]
+    failures += template_errors()
     for path, error in failures:
         print(f"FAIL {path}: {error}")
     if failures or not paths:

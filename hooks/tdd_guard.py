@@ -34,6 +34,7 @@ import sys
 GUARDED_TOOLS = ("Edit", "Write", "MultiEdit", "NotebookEdit", "Bash")
 TARGET = r"""['"]?([^\s;&|<>()'"]+)"""
 REDIRECT = re.compile(r"(>>?)\s*" + TARGET)
+PLACEHOLDERS = {"{dir}": "(?:.*/)?", "{name}": "[^/]+"}
 
 NO_MIRROR_MSG = """\
 lexi — write to `{rel}` BLOCKED.
@@ -84,16 +85,31 @@ def to_rel(file_path, cwd):
 
 
 def is_test_file(rel, cfg):
-    return rel.startswith(cfg["tests"]) and rel.endswith(cfg["test_suffix"])
+    return any(re.fullmatch(template_pattern(mirror["test"]), rel) for mirror in mirrors_of(cfg))
+
+
+def template_pattern(template):
+    """`tests/{dir}test_{name}.py` -> a regex matching every path the template can produce."""
+    parts = re.split(r"(\{dir\}|\{name\})", template)
+    return "".join(PLACEHOLDERS.get(part, re.escape(part)) for part in parts)
+
+
+def mirrors_of(cfg):
+    """`mirrors` in order, then the legacy `source`/`tests`/`test_suffix` as one more: first match wins."""
+    mirrors = list(cfg.get("mirrors") or [])
+    if "source" in cfg:
+        mirrors.append({"source": cfg["source"], "test": cfg["tests"] + "{dir}{name}" + cfg["test_suffix"]})
+    return mirrors
 
 
 def mirror_of(rel, cfg):
-    """lib/models/user.dart -> test/models/user_test.dart"""
-    source = cfg["source"]
-    if not rel.startswith(source):
-        return None
-    stem = os.path.splitext(rel[len(source):])[0]
-    return cfg["tests"] + stem + cfg["test_suffix"]
+    """src/pkg/cart.py + `tests/{dir}test_{name}.py` -> tests/pkg/test_cart.py"""
+    for mirror in mirrors_of(cfg):
+        if rel.startswith(mirror["source"]):
+            folder, filename = os.path.split(rel[len(mirror["source"]):])
+            name = os.path.splitext(filename)[0]
+            return mirror["test"].replace("{dir}", folder + "/" if folder else "").replace("{name}", name)
+    return None
 
 
 def is_testable(rel, cfg):
