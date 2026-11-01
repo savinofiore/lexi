@@ -24,6 +24,7 @@ export type Usage = {
   context: { tokens?: number; percent?: number }
   rateLimits: { kind: string; percentUsed: number; resetsAt?: string }[]
   usd?: number
+  cacheTokens?: number
 }
 
 // The model and effort the Jev router settled on for the session, as the usage row shows them.
@@ -31,6 +32,6 @@ export type Routing = { model: string; effort: string }
 
 declare module 'claude-code' {
   interface PluginState {
-    'lexi': { lastGate: GateRun | null; agents: AgentRun[]; selected: string | null; usage: Usage | null; routing: Routing | null }
+    'lexi': { lastGate: GateRun | null; agents: AgentRun[]; selected: string | null; usage: Usage | null; routing: Routing | null; nativeEffort: string | null; cacheTokens: number }
   }
 }

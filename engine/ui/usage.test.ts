@@ -13,6 +13,11 @@ const JEV_FAST = {
 }
 const STEP = { turnId: 't1', index: 0, model: 'claude-opus-5-5', effort: 'medium' as const, messageCount: 1 }
 
+const finish = (cacheReadTokens: number) => ({
+  answer: 'done', durationMs: 100, isAborted: false, turnId: 't1', reason: 'answer' as const,
+  usage: { model: 'claude-opus-5-5', input_tokens: 500, output_tokens: 100, cache_read_input_tokens: cacheReadTokens, cache_creation_input_tokens: 0 },
+})
+
 const drain = async (stream: AsyncIterable<unknown>) => {
   for await (const chunk of stream) void chunk
 }
@@ -83,6 +88,20 @@ describe('usage row', () => {
     expect(text).toContain('1d12h')
   })
 
+  test('the model and its effort move after the rate-limit gauges, so ctx and the limits lead the row', async ($, on) => {
+    setupWorld(on)
+    const limits = [{ kind: 'five_hour', percentUsed: 21, resetsAt: new Date(3 * HOUR).toISOString() }]
+    await $.session.measure(measure(10, limits))
+    const ui = await mountBand($)
+    const texts = (await ui.findAll({ type: 'Text' })).map((t) => t.text)
+    await ui.unmount()
+    const ctxAt = texts.findIndex((t) => t.trim() === 'ctx')
+    const fiveHourAt = texts.findIndex((t) => t.trim() === '5h')
+    const modelAt = texts.findIndex((t) => t.includes('Opus 5.5'))
+    expect(ctxAt).toBeGreaterThanOrEqual(0)
+    expect(modelAt).toBeGreaterThan(fiveHourAt)
+  })
+
   test('off a subscription there is no rate-limit segment, and no cost without a ledger', async ($, on) => {
     setupWorld(on)
     await $.session.measure(measure(10))
@@ -128,5 +147,39 @@ describe('usage row', () => {
     await drain($.turn.step({ ...STEP, agentId: 'agent-1' }))
     await $.session.measure(measure(10))
     expect(await bandText($)).toContain('Opus 5.5')
+  })
+
+  test('off Jev the model still shows its effort, taken from the turn\'s own setting', async ($, on) => {
+    setupWorld(on)
+    await drain($.turn.step({ ...STEP, effort: 'high' }))
+    await $.session.measure(measure(10))
+    expect(await bandText($)).toContain('Opus 5.5 · high')
+  })
+
+  test('the row shows cache tokens read this session', async ($, on) => {
+    setupWorld(on)
+    on('turn.complete', async (_$, e) => ({ text: e.answer }))
+    await $.turn.complete(finish(50_000))
+    await $.session.measure(measure(10))
+    expect(await bandText($)).toContain('50.0k cache')
+  })
+
+  test('cache accumulates across turns in the session', async ($, on) => {
+    setupWorld(on)
+    on('turn.complete', async (_$, e) => ({ text: e.answer }))
+    await $.turn.complete(finish(10_000))
+    await $.turn.complete(finish(20_000))
+    await $.session.measure(measure(10))
+    expect(await bandText($)).toContain('30.0k cache')
+  })
+
+  test('cache resets when the session restarts', async ($, on) => {
+    setupWorld(on)
+    on('turn.complete', async (_$, e) => ({ text: e.answer }))
+    on('session.end', async (_$, e) => ({ sessionId: e.sessionId }))
+    await $.turn.complete(finish(50_000))
+    await $.session.end({ reason: 'clear', sessionId: 's1', resume: { id: 's1' } })
+    await $.session.measure(measure(10))
+    expect(await bandText($)).not.toContain('cache')
   })
 })
