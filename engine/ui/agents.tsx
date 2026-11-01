@@ -86,7 +86,7 @@ const listView = (ui: Elements, list: readonly AgentRun[], select: Select) => (
   <ui.Box flexDirection="column">
     {list.length === 0 && <ui.Text dimColor>No subagents yet.</ui.Text>}
     {[...list.filter((run) => !run.isDone), ...list.filter((run) => run.isDone)].map((run) => (
-      <ui.Box>
+      <ui.Box flexWrap="wrap" alignItems="center">
         <ui.Text color={run.color}>{glyphOf(run)} {run.label} · {run.model === undefined ? '' : `${run.model} · `}{statusOf(run)} · {stepsOf(run)} · {run.description} </ui.Text>
         <ui.Button key={run.id} label="open" onPress={() => select(run.id)} />
       </ui.Box>
