@@ -64,7 +64,17 @@ export const usageRow = (ui: Elements, now: Usage, at: number) => {
     ...(now.context.tokens === undefined ? [] : [<ui.Text dimColor>{tokensOf(now.context.tokens)}</ui.Text>]),
     ...(now.usd === undefined ? [] : [<ui.Text color={COST}>${now.usd.toFixed(2)}</ui.Text>]),
   ]
-  return <ui.Box>{segments.flatMap((one, index) => (index === 0 ? [one] : [<ui.Text dimColor> │ </ui.Text>, one]))}</ui.Box>
+  // flexWrap keeps a narrow band from clipping the last segment: it drops to a second row instead.
+  return (
+    <ui.Box flexWrap="wrap">
+      {segments.map((segment, index) => (
+        <ui.Box>
+          {index > 0 && <ui.Text dimColor> │ </ui.Text>}
+          {segment}
+        </ui.Box>
+      ))}
+    </ui.Box>
+  )
 }
 
 // The engine's own status-line figures, pushed after each turn and on each rate-limit move.
