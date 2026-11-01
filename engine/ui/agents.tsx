@@ -9,6 +9,8 @@ const TITLE = 'Subagents'
 
 const agents = atom({ plugin: 'lexi', key: 'agents' } as const, [])
 const selected = atom({ plugin: 'lexi', key: 'selected' } as const, null)
+// The usage row reads this: input tokens the prompt cache served, summed over the main loop's turns.
+const cacheTokens = atom({ plugin: 'lexi', key: 'cacheTokens' } as const, 0)
 
 // shortcut: keeps the last 50 subagents of the session; raise it if a long session needs more.
 const KEEP = 50
@@ -63,7 +65,10 @@ export const onAgentsCommand: MatchedHook<'command.run', { command: 'subagents' 
 
 export const onTurnComplete: Hook<'turn.complete'> = async ($, e, next) => {
   const done = await next(e)
-  if (e.agentId === undefined) return done
+  if (e.agentId === undefined) {
+    await update($, cacheTokens, (total) => total + (e.usage?.cache_read_input_tokens ?? 0))
+    return done
+  }
   const tokens = e.usage === undefined ? undefined : e.usage.input_tokens + e.usage.output_tokens
   const finished = { isDone: true, durationMs: e.durationMs, tokens, answer: e.answer }
   await update($, agents, (list) => list.map((run) => (run.id === e.agentId ? { ...run, ...finished } : run)))

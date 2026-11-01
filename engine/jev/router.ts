@@ -29,6 +29,12 @@ const DEBUG = { to: 'debug' } as const
 // The usage row reads this: the model and effort the router settled on, since the session's own are not the ones answering.
 const routing = atom({ plugin: 'lexi', key: 'routing' } as const, null)
 
+// The usage row's fallback: the turn's own effort setting, when Jev never routed this session.
+const nativeEffort = atom({ plugin: 'lexi', key: 'nativeEffort' } as const, null)
+
+// The usage row's cache segment: input tokens the prompt cache served, summed over the main loop's turns.
+const cacheTokens = atom({ plugin: 'lexi', key: 'cacheTokens' } as const, 0)
+
 type HookArgs<N extends EventName> = Parameters<Hook<N>>
 type Plan = { fromModel: string; fromEffort: unknown; model?: string; effort?: Effort }
 
@@ -52,6 +58,8 @@ async function resetSession($: EngineInterface) {
   sessionAnswer = undefined
   sessionPlan = undefined
   await update($, routing, () => null)
+  await update($, nativeEffort, () => null)
+  await update($, cacheTokens, () => 0)
 }
 
 // One hook per event: the model is chosen once per session, the lexi flow on every prompt.
@@ -81,7 +89,9 @@ async function routeFlow($: EngineInterface, prompt: string): Promise<string | u
 }
 
 export async function* onTurnStep($: EngineInterface, e: HookArgs<'turn.step'>[1], next: HookArgs<'turn.step'>[2]) {
-  if (e.agentId !== undefined || !sessionAnswer) return yield* next(e)
+  if (e.agentId !== undefined) return yield* next(e)
+  await update($, nativeEffort, () => (e.effort === undefined ? null : String(e.effort)))
+  if (!sessionAnswer) return yield* next(e)
   if (!sessionPlan) {
     sessionPlan = startSessionPlan($, sessionAnswer, e.model, e.effort)
     await update($, routing, () => ({ model: shortModel(sessionPlan?.model ?? e.model), effort: String(sessionPlan?.effort ?? e.effort ?? 'default') }))
